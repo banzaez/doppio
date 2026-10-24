@@ -1,7 +1,7 @@
 import SwiftUI
 import AppKit
 
-/// Нижняя строка навигации основного экрана Doppio со стеклянными кнопками
+/// Нижняя строка навигации основного экрана Doppio со стеклянными кнопками macOS 27 / iOS 2026
 struct FooterActionsView: View {
     @Bindable var state: DoppioState
     let onOpenSettings: () -> Void
@@ -24,23 +24,20 @@ struct FooterActionsView: View {
 
             Spacer()
 
-            // Индикатор питания
+            // Индикатор питания в стеклянной капсуле
             if let info = state.batteryInfo {
                 HStack(spacing: 4) {
                     Image(systemName: info.iconName)
                         .font(.system(size: 10))
-                        .foregroundStyle(info.isCharging ? Color.green : (info.percentage <= state.batteryThreshold ? Color.red : Color.secondary))
+                        .foregroundStyle(batteryColor(for: info))
 
                     Text("\(info.percentage)%")
-                        .font(.system(size: 10, weight: .medium, design: .rounded))
+                        .font(.system(size: 10, weight: .semibold, design: .rounded))
                         .foregroundStyle(Color.secondary)
                 }
-                .padding(.horizontal, 6)
+                .padding(.horizontal, 8)
                 .padding(.vertical, 4)
-                .background(
-                    Capsule()
-                        .fill(Color.primary.opacity(0.04))
-                )
+                .glassCapsule(isAccent: info.percentage <= state.batteryThreshold)
                 .help(info.description(using: state.l10n))
             }
 
@@ -48,7 +45,7 @@ struct FooterActionsView: View {
 
             // Кнопка закрытия приложения с явной надписью «Закрыть»
             Button {
-                state.deactivate(reason: "Завершение работы")
+                state.deactivate(reason: .quitApp)
                 NSApplication.shared.terminate(nil)
             } label: {
                 HStack(spacing: 4) {
@@ -64,5 +61,18 @@ struct FooterActionsView: View {
             .buttonStyle(GlassButtonStyle(cornerRadius: 8))
         }
         .padding(.horizontal, 2)
+    }
+
+    private func batteryColor(for info: BatteryInfo) -> Color {
+        if info.isCharging {
+            return .green
+        }
+        if info.percentage <= state.batteryThreshold {
+            return .red
+        }
+        if info.percentage <= 40 {
+            return .orange
+        }
+        return .secondary
     }
 }

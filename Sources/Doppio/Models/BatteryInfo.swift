@@ -38,6 +38,6 @@ public struct BatteryInfo: Equatable, Sendable {
     }
 
     public var description: String {
-        description(using: L10n(language: .system))
+        description(using: L10n(language: .defaultLanguage))
     }
 }

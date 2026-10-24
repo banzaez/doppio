@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// Статус батареи и питания
+/// Статус батареи и питания в стиле macOS 27 / iOS 2026 Liquid Glass
 struct BatteryStatusBadge: View {
     @Bindable var state: DoppioState
 
@@ -11,19 +11,21 @@ struct BatteryStatusBadge: View {
                     .font(.system(size: 11))
                     .foregroundStyle(batteryColor(for: info))
 
-                Text(info.description)
+                Text(info.description(using: state.l10n))
                     .font(.system(size: 10, weight: .medium))
                     .foregroundStyle(Color.secondary)
 
                 if state.batteryProtectionEnabled {
-                    Text("• автостоп ≤ \(state.batteryThreshold)%")
+                    Text("• \(state.l10n.batteryThresholdNote) ≤ \(state.batteryThreshold)%")
                         .font(.system(size: 9))
                         .foregroundStyle(Color.secondary.opacity(0.7))
                 }
 
                 Spacer()
             }
-            .padding(.horizontal, 4)
+            .padding(.horizontal, 8)
+            .padding(.vertical, 5)
+            .glassCard(cornerRadius: 8)
         }
     }
 

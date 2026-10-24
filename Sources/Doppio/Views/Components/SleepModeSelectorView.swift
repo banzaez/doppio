@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// Переключатель режима сна в полностью стеклянном стиле Liquid Glass
+/// Переключатель режима сна в полностью стеклянном стиле macOS 27 / iOS 2026 Liquid Glass
 struct SleepModeSelectorView: View {
     @Bindable var state: DoppioState
 
@@ -11,8 +11,8 @@ struct SleepModeSelectorView: View {
                 .foregroundStyle(Color.secondary)
                 .padding(.horizontal, 2)
 
-            // Стеклянный переключатель из двух сегментов
-            HStack(spacing: 5) {
+            // Стеклянный переключатель из двух сегментов в едином треке
+            HStack(spacing: 4) {
                 ForEach(SleepAssertionType.allCases, id: \.self) { type in
                     let isSelected = state.assertionType == type
 
@@ -38,6 +38,7 @@ struct SleepModeSelectorView: View {
                     ))
                 }
             }
+            .glassSegmentTrack(cornerRadius: 10)
 
             Text(state.assertionType.description(using: state.l10n))
                 .font(.system(size: 10))

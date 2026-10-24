@@ -4,6 +4,7 @@ import SwiftUI
 struct PresetSelectionView: View {
     @Bindable var state: DoppioState
     @FocusState private var isMinutesFocused: Bool
+    @State private var localMinutes: Int = 45
 
     private let standardPresets: [KeepAwakePreset] = [
         .indefinite,
@@ -21,7 +22,7 @@ struct PresetSelectionView: View {
                 .foregroundStyle(Color.secondary)
                 .padding(.horizontal, 2)
 
-            // Сетка из 6 основных пресетов в стиле стекла
+            // Сетка из 6 основных пресетов в стиле жидкого стекла macOS 27 / iOS 2026
             LazyVGrid(columns: [
                 GridItem(.flexible(), spacing: 6),
                 GridItem(.flexible(), spacing: 6),
@@ -51,8 +52,18 @@ struct PresetSelectionView: View {
                 }
             }
 
-            // Фиксированная стеклянная строка ввода своего времени (без раскрытия окна)
+            // Фиксированная стеклянная строка ввода своего времени
             customTimeRow
+        }
+        .onAppear {
+            localMinutes = state.customMinutes
+            isMinutesFocused = false
+            DispatchQueue.main.async {
+                isMinutesFocused = false
+            }
+        }
+        .onChange(of: state.customMinutes) { _, newValue in
+            localMinutes = newValue
         }
     }
 
@@ -64,10 +75,7 @@ struct PresetSelectionView: View {
             // Кнопка выбора пресета «Свой»
             Button {
                 isMinutesFocused = false
-                withAnimation(.spring(response: 0.25, dampingFraction: 0.75)) {
-                    state.selectedPreset = .custom
-                    state.activate(preset: .custom)
-                }
+                commitMinutes()
             } label: {
                 HStack(spacing: 5) {
                     Image(systemName: "timer")
@@ -98,16 +106,7 @@ struct PresetSelectionView: View {
                 HStack(spacing: 2) {
                     TextField(
                         "",
-                        value: Binding(
-                            get: { state.customMinutes },
-                            set: { newValue in
-                                state.customMinutes = max(1, min(720, newValue))
-                                state.selectedPreset = .custom
-                                if state.isActive {
-                                    state.activate(preset: .custom)
-                                }
-                            }
-                        ),
+                        value: $localMinutes,
                         format: .number
                     )
                     .textFieldStyle(.plain)
@@ -117,9 +116,11 @@ struct PresetSelectionView: View {
                     .frame(width: 32)
                     .focused($isMinutesFocused)
                     .onSubmit {
-                        state.selectedPreset = .custom
-                        if state.isActive {
-                            state.activate(preset: .custom)
+                        commitMinutes()
+                    }
+                    .onChange(of: isMinutesFocused) { _, focused in
+                        if !focused {
+                            commitMinutes()
                         }
                     }
 
@@ -149,12 +150,27 @@ struct PresetSelectionView: View {
         .padding(.horizontal, 10)
         .padding(.vertical, 6)
         .frame(height: 34)
-        .glassCard(cornerRadius: 9)
+        .glassCard(cornerRadius: 9, isSelected: isSelected, isAccent: state.isActive)
+    }
+
+    private func commitMinutes() {
+        isMinutesFocused = false
+        withAnimation(.spring(response: 0.25, dampingFraction: 0.75)) {
+            let clamped = max(1, min(720, localMinutes))
+            localMinutes = clamped
+            state.customMinutes = clamped
+            state.selectedPreset = .custom
+            if state.isActive {
+                state.activate(preset: .custom)
+            }
+        }
     }
 
     private func adjustCustomMinutes(by delta: Int) {
+        isMinutesFocused = false
         withAnimation(.spring(response: 0.2, dampingFraction: 0.75)) {
             let updated = max(5, min(720, state.customMinutes + delta))
+            localMinutes = updated
             state.customMinutes = updated
             state.selectedPreset = .custom
             if state.isActive {

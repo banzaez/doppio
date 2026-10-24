@@ -35,7 +35,7 @@ public enum KeepAwakePreset: Equatable, Hashable, Identifiable, CaseIterable, Se
     }
 
     public var title: String {
-        title(using: L10n(language: .system))
+        title(using: L10n(language: .defaultLanguage))
     }
 
     public var shortTitle: String {

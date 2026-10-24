@@ -2,56 +2,41 @@ import Foundation
 
 /// Поддерживаемые языки интерфейса Doppio
 public enum AppLanguage: String, CaseIterable, Identifiable, Sendable {
-    case system = "system"
-    case english = "en"
-    case ukrainian = "uk"
-    case russian = "ru"
     case german = "de"
-    case french = "fr"
+    case english = "en"
     case spanish = "es"
+    case french = "fr"
+    case russian = "ru"
+    case ukrainian = "uk"
 
     public var id: String { rawValue }
 
     public var displayName: String {
         switch self {
-        case .system:
-            return Self.systemDisplayTitle()
-        case .english:
-            return "English"
-        case .ukrainian:
-            return "Українська"
-        case .russian:
-            return "Русский"
         case .german:
             return "Deutsch"
-        case .french:
-            return "Français"
+        case .english:
+            return "English"
         case .spanish:
             return "Español"
+        case .french:
+            return "Français"
+        case .russian:
+            return "Русский"
+        case .ukrainian:
+            return "Українська"
         }
-    }
-
-    /// Отображение системного языка с указанием автоопределённого языка
-    private static func systemDisplayTitle() -> String {
-        let detected = detectSystemLanguageCode()
-        let name: String
-        switch detected {
-        case "uk": name = "Українська"
-        case "ru": name = "Русский"
-        case "de": name = "Deutsch"
-        case "fr": name = "Français"
-        case "es": name = "Español"
-        default: name = "English"
-        }
-        return "Авто: \(name)"
     }
 
     /// Код эффективного языка для словаря локализации
     public var effectiveCode: String {
-        if self == .system {
-            return Self.detectSystemLanguageCode()
-        }
-        return self.rawValue
+        rawValue
+    }
+
+    /// Язык по умолчанию на основе предпочтительного языка системы macOS
+    public static var defaultLanguage: AppLanguage {
+        let detected = detectSystemLanguageCode()
+        return AppLanguage(rawValue: detected) ?? .english
     }
 
     /// Определение языка системы macOS из preferredLanguages

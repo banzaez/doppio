@@ -2,8 +2,13 @@ import Foundation
 import IOKit.ps
 import os
 
+/// Протокол мониторинга питания и батареи
+public protocol BatteryMonitoring: Sendable {
+    func fetchBatteryInfo() -> BatteryInfo?
+}
+
 /// Сервис мониторинга состояния батареи и питания
-public final class BatteryMonitorService: Sendable {
+public final class BatteryMonitorService: BatteryMonitoring {
     private let logger = Logger(subsystem: "com.doppio.app", category: "BatteryMonitor")
 
     public init() {}

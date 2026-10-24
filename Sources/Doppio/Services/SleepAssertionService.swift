@@ -2,9 +2,18 @@ import Foundation
 import IOKit.pwr_mgt
 import os
 
+/// Протокол управления утверждениями сна (Power Management Assertions)
+public protocol SleepAssertionManaging: Actor, Sendable {
+    var isHoldingAssertion: Bool { get async }
+    var activeType: SleepAssertionType? { get async }
+    @discardableResult
+    func activate(type: SleepAssertionType, reason: String) async -> Bool
+    func release() async
+}
+
 /// Сервис управления IOKit утверждениями сна (Power Management Assertions)
 /// Реализован как Swift Actor для гарантии потокобезопасности и отсутствия race conditions
-public actor SleepAssertionService {
+public actor SleepAssertionService: SleepAssertionManaging {
     private var assertionID: IOPMAssertionID = 0
     private var currentType: SleepAssertionType?
     private let logger = Logger(subsystem: "com.doppio.app", category: "SleepAssertion")

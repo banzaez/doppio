@@ -62,11 +62,29 @@ struct DoppioTests {
         #expect(de.settingsTitle == "Einstellungen")
     }
 
-    @Test("Проверка автоматического определения языка системы")
+    @Test("Проверка автоматического определения языка системы по умолчанию")
     func systemLanguageDetection() {
         let detected = AppLanguage.detectSystemLanguageCode()
         #expect(!detected.isEmpty)
         #expect(["en", "uk", "ru", "de", "fr", "es"].contains(detected))
+        let defaultLang = AppLanguage.defaultLanguage
+        #expect(AppLanguage.allCases.contains(defaultLang))
+    }
+
+    @Test("Проверка правильной алфавитной сортировки языков")
+    func languageSortingOrder() {
+        let expectedOrder: [AppLanguage] = [.german, .english, .spanish, .french, .russian, .ukrainian]
+        #expect(AppLanguage.allCases == expectedOrder)
+        #expect(AppLanguage.allCases.map(\.displayName) == ["Deutsch", "English", "Español", "Français", "Русский", "Українська"])
+    }
+
+    @Test("Проверка порядка режимов и значения по умолчанию")
+    @MainActor
+    func sleepAssertionTypeOrderAndDefault() {
+        #expect(SleepAssertionType.allCases == [.systemOnly, .systemAndDisplay])
+        let testDefaults = UserDefaults(suiteName: "test-sleep-assertion-\(UUID().uuidString)")!
+        let state = DoppioState(defaults: testDefaults)
+        #expect(state.assertionType == .systemOnly)
     }
 
     @Test("Проверка IOKit SleepAssertionService")
@@ -95,7 +113,8 @@ struct DoppioTests {
     @Test("Проверка переключения DoppioState и языка")
     @MainActor
     func doppioStateToggleAndActivation() async {
-        let state = DoppioState()
+        let testDefaults = UserDefaults(suiteName: "test-toggle-\(UUID().uuidString)")!
+        let state = DoppioState(defaults: testDefaults)
 
         #expect(!state.isActive)
         #expect(state.remainingSeconds == nil)
@@ -149,5 +168,206 @@ struct DoppioTests {
         let customHosting = NSHostingView(rootView: customView)
         let customSize = customHosting.fittingSize
         #expect(customSize.height >= size.height)
+    }
+
+    @Test("Проверка причин деактивации и локализации")
+    @MainActor
+    func deactivationReasonsLocalization() async {
+        let en = L10n(language: .english)
+        let ru = L10n(language: .russian)
+        let uk = L10n(language: .ukrainian)
+
+        let reasonTimer = DeactivationReason.timerExpired
+        #expect(reasonTimer.localized(using: en) == "Timer expired")
+        #expect(reasonTimer.localized(using: ru) == "Время таймера истекло")
+        #expect(reasonTimer.localized(using: uk) == "Час таймера вичерпано")
+
+        let reasonBattery = DeactivationReason.batteryLow(percentage: 15)
+        #expect(reasonBattery.localized(using: en) == "Low battery (15%)")
+        #expect(reasonBattery.localized(using: ru) == "Низкий заряд батареи (15%)")
+        #expect(reasonBattery.localized(using: uk) == "Низький заряд батареї (15%)")
+
+        let state = DoppioState()
+        state.deactivate(reason: .timerExpired)
+        #expect(state.lastDeactivationReason == .timerExpired)
+        #expect(state.localizedDeactivationReason != nil)
+
+        state.clearDeactivationReason()
+        #expect(state.lastDeactivationReason == nil)
+        #expect(state.localizedDeactivationReason == nil)
+    }
+
+    // MARK: - Mocks & Dependency Injection Tests
+
+    private actor MockSleepAssertion: SleepAssertionManaging {
+        var isHoldingAssertion: Bool = false
+        var activeType: SleepAssertionType? = nil
+
+        func activate(type: SleepAssertionType, reason: String) async -> Bool {
+            self.isHoldingAssertion = true
+            self.activeType = type
+            return true
+        }
+
+        func release() async {
+            self.isHoldingAssertion = false
+            self.activeType = nil
+        }
+    }
+
+    private final class MockBattery: BatteryMonitoring, @unchecked Sendable {
+        var mockInfo: BatteryInfo?
+
+        init(mockInfo: BatteryInfo?) {
+            self.mockInfo = mockInfo
+        }
+
+        func fetchBatteryInfo() -> BatteryInfo? {
+            mockInfo
+        }
+    }
+
+    private final class MockLaunchAtLogin: LaunchAtLoginManaging, @unchecked Sendable {
+        var isEnabled: Bool = false
+        func setEnabled(_ enabled: Bool) -> Bool {
+            self.isEnabled = enabled
+            return true
+        }
+    }
+
+    @Test("Проверка внедрения зависимостей и защиты батареи при разряде")
+    @MainActor
+    func dependencyInjectionAndBatteryProtection() async {
+        let mockAssertion = MockSleepAssertion()
+        let mockBattery = MockBattery(mockInfo: BatteryInfo(percentage: 80, isCharging: false, isPluggedIn: false))
+        let mockLaunch = MockLaunchAtLogin()
+
+        let state = DoppioState(
+            assertionService: mockAssertion,
+            batteryMonitor: mockBattery,
+            launchAtLoginService: mockLaunch
+        )
+
+        state.batteryThreshold = 20
+        state.batteryProtectionEnabled = true
+
+        // Активируем бодрствование при нормальном заряде
+        state.activate(preset: .indefinite)
+        #expect(state.isActive)
+
+        // Симулируем падение заряда аккумулятора ниже порога
+        mockBattery.mockInfo = BatteryInfo(percentage: 15, isCharging: false, isPluggedIn: false)
+        state.refreshBatteryInfo()
+
+        #expect(!state.isActive)
+        #expect(state.lastDeactivationReason == .batteryLow(percentage: 15))
+
+        // Проверяем автозапуск через мок
+        #expect(!state.isLaunchAtLogin)
+        state.toggleLaunchAtLogin()
+        #expect(state.isLaunchAtLogin)
+    }
+
+    @Test("Проверка поведения на настольном Mac (без аккумулятора)")
+    @MainActor
+    func desktopMacBehavior() async {
+        let mockAssertion = MockSleepAssertion()
+        let mockBattery = MockBattery(mockInfo: nil) // Desktop Mac (Mac mini, Mac Studio, Mac Pro)
+        let mockLaunch = MockLaunchAtLogin()
+
+        let state = DoppioState(
+            assertionService: mockAssertion,
+            batteryMonitor: mockBattery,
+            launchAtLoginService: mockLaunch
+        )
+
+        #expect(state.batteryInfo == nil)
+
+        // Активация должна беспрепятственно работать на Desktop Mac
+        state.activate(preset: .minutes30)
+        #expect(state.isActive)
+        state.deactivate()
+        #expect(!state.isActive)
+    }
+
+    @Test("Проверка режимов строки меню (MenuBarDisplayStyle) и бейджа")
+    @MainActor
+    func menuBarDisplayStylesAndBadge() {
+        let testDefaults = UserDefaults(suiteName: "test-styles-\(UUID().uuidString)")!
+        let state = DoppioState(defaults: testDefaults)
+        state.activate(preset: .minutes30)
+        #expect(state.isActive)
+
+        // 1. Стандартный режим
+        state.menuBarDisplayStyle = .standard
+        state.showTimerInMenuBar = true
+        #expect(state.menuBarBadgeText != nil)
+
+        // 2. Только иконка: бейдж времени должен скрываться
+        state.menuBarDisplayStyle = .iconOnly
+        #expect(state.menuBarBadgeText == nil)
+
+        // Проверка локализованных названий стилей
+        let l10n = L10n(language: .english)
+        #expect(MenuBarDisplayStyle.standard.title(using: l10n) == "Standard")
+        #expect(MenuBarDisplayStyle.iconOnly.title(using: l10n) == "Icon only")
+    }
+
+    @Test("Проверка управления целевыми приложениями (App Triggers)")
+    @MainActor
+    func smartTriggersAppManagement() {
+        let state = DoppioState()
+        let app1 = TriggerApp(bundleIdentifier: "com.apple.dt.Xcode", displayName: "Xcode")
+        let app2 = TriggerApp(bundleIdentifier: "com.apple.FinalCut", displayName: "Final Cut Pro")
+
+        state.addTargetApp(app1)
+        state.addTargetApp(app2)
+
+        #expect(state.targetApps.count >= 2)
+        #expect(state.targetApps.contains(where: { $0.bundleIdentifier == "com.apple.dt.Xcode" }))
+
+        // Проверка активации по триггеру приложения
+        state.activateWithTrigger(.appTrigger(bundleId: app1.bundleIdentifier, appName: app1.displayName))
+        #expect(state.isActive)
+        #expect(state.activeTriggerSource == .appTrigger(bundleId: app1.bundleIdentifier, appName: app1.displayName))
+
+        // Удаление приложения
+        state.removeTargetApp(id: app1.id)
+        #expect(!state.targetApps.contains(where: { $0.id == app1.id }))
+
+        state.deactivate(reason: .appTerminated(appName: app1.displayName))
+        #expect(!state.isActive)
+        #expect(state.lastDeactivationReason == .appTerminated(appName: "Xcode"))
+    }
+
+    @Test("Проверка продления сессии и причин деактивации триггеров")
+    @MainActor
+    func sessionExtensionAndTriggerReasons() {
+        let state = DoppioState()
+        state.activate(preset: .minutes15)
+        #expect(state.isActive)
+
+        let initialRemaining = state.remainingSeconds ?? 0
+        state.extendSession(by: 900) // +15 минут
+        let newRemaining = state.remainingSeconds ?? 0
+        #expect(newRemaining >= initialRemaining + 890)
+
+        // Проверка локализации новых причин деактивации
+        let ru = L10n(language: .russian)
+        let en = L10n(language: .english)
+        let uk = L10n(language: .ukrainian)
+
+        let reasonApp = DeactivationReason.appTerminated(appName: "Xcode")
+        #expect(reasonApp.localized(using: ru) == "Закрыто: Xcode")
+        #expect(reasonApp.localized(using: en) == "Closed: Xcode")
+        #expect(reasonApp.localized(using: uk) == "Закрито: Xcode")
+
+        let reasonPower = DeactivationReason.powerDisconnected
+        #expect(reasonPower.localized(using: ru) == "Отключено питание от сети")
+        #expect(reasonPower.localized(using: en) == "AC power disconnected")
+
+        let reasonDisplay = DeactivationReason.externalDisplayDisconnected
+        #expect(reasonDisplay.localized(using: ru) == "Внешний дисплей отключен")
+        #expect(reasonDisplay.localized(using: en) == "External display disconnected")
     }
 }

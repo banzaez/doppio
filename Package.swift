@@ -13,7 +13,8 @@ let package = Package(
         .executableTarget(
             name: "Doppio",
             linkerSettings: [
-                .linkedFramework("IOKit")
+                .linkedFramework("IOKit"),
+                .linkedFramework("UserNotifications")
             ]
         ),
         .testTarget(
