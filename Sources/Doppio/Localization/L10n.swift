@@ -91,6 +91,17 @@ public struct L10n: Sendable {
         }
     }
 
+    public var minuteSuffix: String {
+        switch code {
+        case "uk": return "хв"
+        case "ru": return "мин"
+        case "de": return "Min"
+        case "fr": return "min"
+        case "es": return "min"
+        default:   return "min"
+        }
+    }
+
     public var presetCustom: String {
         switch code {
         case "uk": return "Власний таймер"

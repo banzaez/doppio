@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// Главное всплывающее окно Doppio в строке меню с динамическим авто-ресайзом
+/// Главное всплывающее окно Doppio в строке меню
 struct DoppioPopoverView: View {
     @Bindable var state: DoppioState
 
@@ -38,19 +38,19 @@ struct DoppioPopoverView: View {
     @ViewBuilder
     private var mainScreenView: some View {
         VStack(spacing: 12) {
-            // Верхний блок Control Center с тумблером
+            // Верхний стеклянный блок Control Center с тумблером
             ControlCenterHeroCard(state: state)
 
-            // Сетка пресетов времени
+            // Сетка стеклянных пресетов времени и фиксированная строка своего времени
             PresetSelectionView(state: state)
 
-            // Нативный Segmented Control режима сна
+            // Стеклянный переключатель режима сна
             SleepModeSelectorView(state: state)
 
             Divider()
                 .padding(.vertical, 1)
 
-            // Нижняя панель действий
+            // Нижняя строка действий
             FooterActionsView(state: state) {
                 withAnimation(.easeInOut(duration: 0.2)) {
                     currentScreen = .settings

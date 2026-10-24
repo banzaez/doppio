@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// Переключатель режима сна с поддержкой мультиязычности
+/// Переключатель режима сна в полностью стеклянном стиле Liquid Glass
 struct SleepModeSelectorView: View {
     @Bindable var state: DoppioState
 
@@ -11,16 +11,33 @@ struct SleepModeSelectorView: View {
                 .foregroundStyle(Color.secondary)
                 .padding(.horizontal, 2)
 
-            Picker(state.l10n.sectionMode, selection: $state.assertionType) {
-                Label(state.assertionType == .systemAndDisplay ? state.assertionType.title(using: state.l10n) : SleepAssertionType.systemAndDisplay.title(using: state.l10n), systemImage: "display")
-                    .tag(SleepAssertionType.systemAndDisplay)
+            // Стеклянный переключатель из двух сегментов
+            HStack(spacing: 5) {
+                ForEach(SleepAssertionType.allCases, id: \.self) { type in
+                    let isSelected = state.assertionType == type
 
-                Label(state.assertionType == .systemOnly ? state.assertionType.title(using: state.l10n) : SleepAssertionType.systemOnly.title(using: state.l10n), systemImage: "cpu")
-                    .tag(SleepAssertionType.systemOnly)
+                    Button {
+                        withAnimation(.spring(response: 0.25, dampingFraction: 0.75)) {
+                            state.assertionType = type
+                        }
+                    } label: {
+                        HStack(spacing: 5) {
+                            Image(systemName: type.iconName)
+                                .font(.system(size: 11))
+                            Text(type.title(using: state.l10n))
+                                .font(.system(size: 11, weight: isSelected ? .semibold : .medium))
+                        }
+                        .foregroundStyle(isSelected ? (state.isActive ? Color.orange : Color.primary) : Color.secondary)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 6)
+                    }
+                    .buttonStyle(GlassButtonStyle(
+                        isSelected: isSelected,
+                        isAccent: state.isActive,
+                        cornerRadius: 8
+                    ))
+                }
             }
-            .pickerStyle(.segmented)
-            .controlSize(.regular)
-            .labelsHidden()
 
             Text(state.assertionType.description(using: state.l10n))
                 .font(.system(size: 10))
