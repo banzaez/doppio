@@ -1,56 +1,31 @@
 import SwiftUI
 
-/// Выбор режима предотвращения сна (Экран + система или Только система)
+/// Переключатель режима сна в виде нативного Segmented Control macOS 27
 struct SleepModeSelectorView: View {
     @Bindable var state: DoppioState
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
+        VStack(alignment: .leading, spacing: 6) {
             Text("РЕЖИМ БОДРСТВОВАНИЯ")
-                .font(.system(size: 10, weight: .bold))
-                .foregroundStyle(Color.secondary.opacity(0.8))
+                .font(.system(size: 10, weight: .semibold))
+                .foregroundStyle(Color.secondary)
                 .padding(.horizontal, 2)
 
-            HStack(spacing: 8) {
-                ForEach(SleepAssertionType.allCases, id: \.self) { type in
-                    let isSelected = state.assertionType == type
+            Picker("Режим бодрствования", selection: $state.assertionType) {
+                Label("Экран и Mac", systemImage: "display")
+                    .tag(SleepAssertionType.systemAndDisplay)
 
-                    Button {
-                        withAnimation(.easeInOut(duration: 0.2)) {
-                            state.assertionType = type
-                        }
-                    } label: {
-                        HStack(spacing: 8) {
-                            Image(systemName: type.iconName)
-                                .font(.system(size: 12))
-                                .foregroundStyle(isSelected ? Color.orange : Color.secondary)
-
-                            VStack(alignment: .leading, spacing: 1) {
-                                Text(type.title)
-                                    .font(.system(size: 11, weight: isSelected ? .semibold : .medium))
-                                    .foregroundStyle(isSelected ? Color.primary : Color.secondary)
-
-                                Text(type == .systemAndDisplay ? "Экран светит" : "Экран гаснет")
-                                    .font(.system(size: 9))
-                                    .foregroundStyle(Color.secondary.opacity(0.8))
-                            }
-                            Spacer()
-                        }
-                        .padding(.vertical, 7)
-                        .padding(.horizontal, 10)
-                        .frame(maxWidth: .infinity)
-                        .background(
-                            RoundedRectangle(cornerRadius: 8, style: .continuous)
-                                .fill(isSelected ? Color.orange.opacity(0.1) : Color.primary.opacity(0.03))
-                                .overlay(
-                                    RoundedRectangle(cornerRadius: 8, style: .continuous)
-                                        .stroke(isSelected ? Color.orange.opacity(0.35) : Color.primary.opacity(0.06), lineWidth: 1)
-                                )
-                        )
-                    }
-                    .buttonStyle(.plain)
-                }
+                Label("Только Mac", systemImage: "cpu")
+                    .tag(SleepAssertionType.systemOnly)
             }
+            .pickerStyle(.segmented)
+            .controlSize(.regular)
+            .labelsHidden()
+
+            Text(state.assertionType == .systemAndDisplay ? "Дисплей не погаснет, блокировка не включится" : "Дисплей может спать, фоновые задачи продолжат работу")
+                .font(.system(size: 10))
+                .foregroundStyle(Color.secondary.opacity(0.8))
+                .padding(.horizontal, 2)
         }
     }
 }

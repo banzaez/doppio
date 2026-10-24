@@ -1,47 +1,68 @@
 import SwiftUI
 
-/// Главное всплывающее окно Doppio из строки меню
+/// Главное всплывающее окно Doppio в строке меню
 struct DoppioPopoverView: View {
     @Bindable var state: DoppioState
-    @State private var isSettingsExpanded: Bool = false
+
+    enum Screen {
+        case main
+        case settings
+    }
+
+    @State private var currentScreen: Screen = .main
 
     var body: some View {
-        VStack(spacing: 12) {
-            // Верхняя плашка переключателя
-            QuickToggleCard(state: state)
-
-            // Прогресс таймера (если активен)
-            CircularProgressTimerView(state: state)
-
-            // Выбор длительности
-            PresetSelectionView(state: state)
-
-            // Выбор режима (экран + система / только система)
-            SleepModeSelectorView(state: state)
-
-            // Статус батареи
-            BatteryStatusBadge(state: state)
-
-            // Разворачиваемая панель настроек
-            if isSettingsExpanded {
-                QuickSettingsPanel(state: state)
-                    .transition(.opacity.combined(with: .move(edge: .top)))
+        ScrollView(.vertical, showsIndicators: false) {
+            VStack(spacing: 12) {
+                switch currentScreen {
+                case .main:
+                    mainScreenView
+                        .transition(.asymmetric(
+                            insertion: .opacity.combined(with: .move(edge: .leading)),
+                            removal: .opacity.combined(with: .move(edge: .leading))
+                        ))
+                case .settings:
+                    SettingsView(state: state) {
+                        withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
+                            currentScreen = .main
+                        }
+                    }
+                    .transition(.asymmetric(
+                        insertion: .opacity.combined(with: .move(edge: .trailing)),
+                        removal: .opacity.combined(with: .move(edge: .trailing))
+                    ))
+                }
             }
-
-            Divider()
-                .padding(.vertical, 2)
-
-            // Нижние действия
-            FooterActionsView(
-                state: state,
-                isSettingsExpanded: $isSettingsExpanded
-            )
+            .padding(12)
         }
-        .padding(14)
         .frame(width: 320)
-        .background(Color(nsColor: .windowBackgroundColor))
+        .background(.ultraThinMaterial)
         .onAppear {
             state.refreshBatteryInfo()
+        }
+    }
+
+    @ViewBuilder
+    private var mainScreenView: some View {
+        VStack(spacing: 11) {
+            // Верхний блок Control Center с тумблером
+            ControlCenterHeroCard(state: state)
+
+            // Сетка пресетов времени
+            PresetSelectionView(state: state)
+
+            // Нативный Segmented Control режима сна
+            SleepModeSelectorView(state: state)
+
+            Divider()
+                .padding(.vertical, 1)
+
+            // Нижняя панель действий
+            FooterActionsView(state: state) {
+                withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
+                    currentScreen = .settings
+                }
+            }
         }
     }
 }
