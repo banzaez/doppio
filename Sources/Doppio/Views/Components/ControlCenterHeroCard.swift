@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// Карточка переключателя в стиле Control Center macOS 27 с поддержкой локализации
+/// Карточка переключателя в стиле Control Center macOS 27 с жидким стеклом
 struct ControlCenterHeroCard: View {
     @Bindable var state: DoppioState
 
@@ -10,9 +10,9 @@ struct ControlCenterHeroCard: View {
                 // Иконка в стиле macOS Control Center
                 ZStack {
                     RoundedRectangle(cornerRadius: 10, style: .continuous)
-                        .fill(state.isActive ? Color.orange : Color(nsColor: .controlColor))
+                        .fill(state.isActive ? Color.orange : Color.primary.opacity(0.08))
                         .frame(width: 38, height: 38)
-                        .shadow(color: state.isActive ? Color.orange.opacity(0.35) : Color.clear, radius: 4, y: 1)
+                        .shadow(color: state.isActive ? Color.orange.opacity(0.4) : Color.clear, radius: 4, y: 1.5)
 
                     Image(systemName: state.isActive ? "cup.and.saucer.fill" : "cup.and.saucer")
                         .font(.system(size: 19))
@@ -67,14 +67,7 @@ struct ControlCenterHeroCard: View {
                 .frame(height: 3)
             }
         }
-        .background(
-            RoundedRectangle(cornerRadius: 12, style: .continuous)
-                .fill(Color(nsColor: .controlBackgroundColor).opacity(0.8))
-                .overlay(
-                    RoundedRectangle(cornerRadius: 12, style: .continuous)
-                        .stroke(Color.primary.opacity(0.08), lineWidth: 0.5)
-                )
-        )
+        .glassCard(cornerRadius: 14)
     }
 
     private var statusSubtitle: String {

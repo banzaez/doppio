@@ -281,10 +281,21 @@ public struct L10n: Sendable {
         }
     }
 
+    public var closeButton: String {
+        switch code {
+        case "uk": return "Закрити"
+        case "ru": return "Закрыть"
+        case "de": return "Schließen"
+        case "fr": return "Fermer"
+        case "es": return "Cerrar"
+        default:   return "Close"
+        }
+    }
+
     public var quitButton: String {
         switch code {
-        case "uk": return "Завершити Doppio"
-        case "ru": return "Завершить Doppio"
+        case "uk": return "Закрити Doppio"
+        case "ru": return "Закрыть Doppio"
         case "de": return "Doppio beenden"
         case "fr": return "Quitter Doppio"
         case "es": return "Salir de Doppio"

@@ -1,7 +1,7 @@
 import SwiftUI
 import AppKit
 
-/// Экран настроек Doppio с поддержкой мультиязычности и нативной локализацией macOS
+/// Экран настроек Doppio в стеклянном стиле macOS 27
 struct SettingsView: View {
     @Bindable var state: DoppioState
     let onBack: () -> Void
@@ -15,11 +15,13 @@ struct SettingsView: View {
                         Image(systemName: "chevron.left")
                             .font(.system(size: 11, weight: .bold))
                         Text(state.l10n.backButton)
-                            .font(.system(size: 12, weight: .medium))
+                            .font(.system(size: 11, weight: .medium))
                     }
                     .foregroundStyle(Color.orange)
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 4)
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(GlassButtonStyle(cornerRadius: 8))
 
                 Spacer()
 
@@ -29,9 +31,18 @@ struct SettingsView: View {
 
                 Spacer()
 
-                // Пустой блок для симметрии
-                Color.clear
-                    .frame(width: 44, height: 16)
+                // Кнопка закрытия
+                Button {
+                    state.deactivate(reason: "Завершение работы")
+                    NSApplication.shared.terminate(nil)
+                } label: {
+                    Text(state.l10n.closeButton)
+                        .font(.system(size: 11, weight: .medium))
+                        .foregroundStyle(Color.secondary)
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 4)
+                }
+                .buttonStyle(GlassButtonStyle(cornerRadius: 8))
             }
             .padding(.bottom, 2)
 
@@ -57,18 +68,11 @@ struct SettingsView: View {
                     }
                     .pickerStyle(.menu)
                     .controlSize(.small)
-                    .frame(maxWidth: 160)
+                    .frame(maxWidth: 150)
                 }
             }
             .padding(10)
-            .background(
-                RoundedRectangle(cornerRadius: 10, style: .continuous)
-                    .fill(Color(nsColor: .controlBackgroundColor).opacity(0.8))
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 10, style: .continuous)
-                            .stroke(Color.primary.opacity(0.08), lineWidth: 0.5)
-                    )
-            )
+            .glassCard(cornerRadius: 13)
 
             // Блок 2: Системные параметры
             VStack(spacing: 8) {
@@ -100,14 +104,7 @@ struct SettingsView: View {
                 )
             }
             .padding(10)
-            .background(
-                RoundedRectangle(cornerRadius: 10, style: .continuous)
-                    .fill(Color(nsColor: .controlBackgroundColor).opacity(0.8))
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 10, style: .continuous)
-                            .stroke(Color.primary.opacity(0.08), lineWidth: 0.5)
-                    )
-            )
+            .glassCard(cornerRadius: 13)
 
             // Блок 3: Защита аккумулятора
             VStack(alignment: .leading, spacing: 8) {
@@ -121,65 +118,47 @@ struct SettingsView: View {
                     Divider()
                         .padding(.horizontal, 4)
 
-                    VStack(alignment: .leading, spacing: 4) {
-                        HStack {
-                            Text(state.l10n.settingsBatteryThresholdDesc)
-                                .font(.system(size: 10))
-                                .foregroundStyle(Color.secondary)
+                    VStack(alignment: .leading, spacing: 6) {
+                        Text(state.l10n.settingsBatteryThresholdDesc)
+                            .font(.system(size: 10))
+                            .foregroundStyle(Color.secondary)
 
-                            Spacer()
+                        HStack(spacing: 8) {
+                            ForEach([10, 15, 20, 25, 30], id: \.self) { pct in
+                                let isSelected = state.batteryThreshold == pct
 
-                            Text("\(state.batteryThreshold)%")
-                                .font(.system(size: 11, weight: .bold, design: .rounded))
-                                .foregroundStyle(Color.orange)
+                                Button {
+                                    withAnimation(.spring(response: 0.2, dampingFraction: 0.75)) {
+                                        state.batteryThreshold = pct
+                                    }
+                                } label: {
+                                    Text("\(pct)%")
+                                        .font(.system(size: 10, weight: isSelected ? .bold : .medium, design: .rounded))
+                                        .foregroundStyle(isSelected ? Color.orange : Color.secondary)
+                                        .frame(maxWidth: .infinity)
+                                        .padding(.vertical, 4)
+                                }
+                                .buttonStyle(GlassButtonStyle(
+                                    isSelected: isSelected,
+                                    isAccent: true,
+                                    cornerRadius: 6
+                                ))
+                            }
                         }
-
-                        Slider(
-                            value: Binding(
-                                get: { Double(state.batteryThreshold) },
-                                set: { state.batteryThreshold = Int($0) }
-                            ),
-                            in: 10...40,
-                            step: 5
-                        )
-                        .tint(Color.orange)
-                        .controlSize(.small)
                     }
-                    .padding(.horizontal, 4)
                     .padding(.top, 2)
                 }
             }
             .padding(10)
-            .background(
-                RoundedRectangle(cornerRadius: 10, style: .continuous)
-                    .fill(Color(nsColor: .controlBackgroundColor).opacity(0.8))
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 10, style: .continuous)
-                            .stroke(Color.primary.opacity(0.08), lineWidth: 0.5)
-                    )
-            )
+            .glassCard(cornerRadius: 13)
 
-            // Блок 4: Выход из приложения
+            // Подвал настроек с версией
             HStack {
-                Text("Doppio v1.0.0")
+                Text("Doppio v1.0.0 • macOS 27")
                     .font(.system(size: 10))
                     .foregroundStyle(Color.secondary.opacity(0.7))
 
                 Spacer()
-
-                Button {
-                    state.deactivate(reason: "Завершение работы")
-                    NSApplication.shared.terminate(nil)
-                } label: {
-                    HStack(spacing: 4) {
-                        Image(systemName: "power")
-                            .font(.system(size: 10, weight: .bold))
-                        Text(state.l10n.quitButton)
-                            .font(.system(size: 11, weight: .medium))
-                    }
-                    .foregroundStyle(Color.red.opacity(0.9))
-                }
-                .buttonStyle(.plain)
             }
             .padding(.horizontal, 4)
             .padding(.top, 2)

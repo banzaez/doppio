@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// Секция выбора длительности с полной локализацией
+/// Секция выбора длительности в стеклянном стиле macOS 27
 struct PresetSelectionView: View {
     @Bindable var state: DoppioState
 
@@ -20,27 +20,36 @@ struct PresetSelectionView: View {
                 .foregroundStyle(Color.secondary)
                 .padding(.horizontal, 2)
 
-            // Сетка из 6 основных пресетов (3x2)
+            // Сетка из 6 основных пресетов со стеклянным стилем
             LazyVGrid(columns: [
                 GridItem(.flexible(), spacing: 6),
                 GridItem(.flexible(), spacing: 6),
                 GridItem(.flexible(), spacing: 6)
             ], spacing: 6) {
                 ForEach(standardPresets) { preset in
-                    PresetButton(
-                        title: preset.title(using: state.l10n),
-                        isSelected: state.selectedPreset == preset,
-                        isActive: state.isActive && state.selectedPreset == preset
-                    ) {
+                    Button {
                         withAnimation(.spring(response: 0.25, dampingFraction: 0.75)) {
                             state.selectedPreset = preset
                             state.activate(preset: preset)
                         }
+                    } label: {
+                        Text(preset.title(using: state.l10n))
+                            .font(.system(size: 11, weight: state.selectedPreset == preset ? .semibold : .medium))
+                            .foregroundStyle(state.selectedPreset == preset ? (state.isActive ? Color.orange : Color.primary) : Color.primary)
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 7)
+                            .padding(.horizontal, 4)
+                            .lineLimit(1)
                     }
+                    .buttonStyle(GlassButtonStyle(
+                        isSelected: state.selectedPreset == preset,
+                        isAccent: state.isActive,
+                        cornerRadius: 9
+                    ))
                 }
             }
 
-            // Кнопка своего таймера
+            // Кнопка переключения в режим своего таймера
             Button {
                 withAnimation(.spring(response: 0.3, dampingFraction: 0.75)) {
                     state.selectedPreset = .custom
@@ -48,8 +57,8 @@ struct PresetSelectionView: View {
                 }
             } label: {
                 HStack(spacing: 8) {
-                    Image(systemName: "slider.horizontal.3")
-                        .font(.system(size: 11))
+                    Image(systemName: "timer")
+                        .font(.system(size: 12))
                         .foregroundStyle(state.selectedPreset == .custom ? Color.orange : Color.secondary)
 
                     Text(state.l10n.presetCustom)
@@ -58,87 +67,144 @@ struct PresetSelectionView: View {
 
                     Spacer()
 
-                    Text(state.l10n.presetMinutes(state.customMinutes))
+                    Text(formattedCustomDuration)
                         .font(.system(size: 11, weight: .bold, design: .rounded))
                         .foregroundStyle(state.selectedPreset == .custom ? Color.orange : Color.secondary)
                 }
                 .padding(.horizontal, 10)
-                .padding(.vertical, 6)
-                .background(
-                    RoundedRectangle(cornerRadius: 8, style: .continuous)
-                        .fill(state.selectedPreset == .custom ? Color.orange.opacity(0.12) : Color(nsColor: .controlBackgroundColor).opacity(0.6))
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 8, style: .continuous)
-                                .stroke(state.selectedPreset == .custom ? Color.orange.opacity(0.4) : Color.primary.opacity(0.06), lineWidth: 0.5)
-                        )
-                )
+                .padding(.vertical, 7)
+                .frame(maxWidth: .infinity)
             }
-            .buttonStyle(.plain)
+            .buttonStyle(GlassButtonStyle(
+                isSelected: state.selectedPreset == .custom,
+                isAccent: state.isActive,
+                cornerRadius: 9
+            ))
 
-            // Слайдер выбора минут при выбранном Custom
+            // Интерактивная капсула точного времени вместо неудобного ползунка
             if state.selectedPreset == .custom {
-                VStack(spacing: 4) {
-                    HStack {
-                        Text(state.l10n.presetMinutes(5))
-                            .font(.system(size: 9))
-                            .foregroundStyle(Color.secondary)
-                        Spacer()
-                        Text(state.l10n.presetHours(4))
-                            .font(.system(size: 9))
-                            .foregroundStyle(Color.secondary)
-                    }
-
-                    Slider(
-                        value: Binding(
-                            get: { Double(state.customMinutes) },
-                            set: { newValue in
-                                state.customMinutes = Int(newValue)
-                                if state.isActive && state.selectedPreset == .custom {
-                                    state.activate(preset: .custom)
-                                }
-                            }
-                        ),
-                        in: 5...240,
-                        step: 5
-                    )
-                    .tint(Color.orange)
-                    .controlSize(.small)
-                }
-                .padding(.horizontal, 6)
-                .padding(.top, 2)
-                .transition(.opacity.combined(with: .move(edge: .top)))
+                customTimeCapsule
+                    .transition(.opacity.combined(with: .move(edge: .top)))
             }
         }
     }
-}
 
-/// Кнопка стандартного пресета с комфортным размером для текста
-private struct PresetButton: View {
-    let title: String
-    let isSelected: Bool
-    let isActive: Bool
-    let action: () -> Void
+    /// Тактильная капсула управления своим временем
+    private var customTimeCapsule: some View {
+        VStack(spacing: 8) {
+            HStack(spacing: 10) {
+                // Кнопка уменьшения времени
+                Button {
+                    adjustCustomMinutes(by: -stepInterval)
+                } label: {
+                    Image(systemName: "minus")
+                        .font(.system(size: 11, weight: .bold))
+                        .frame(width: 26, height: 26)
+                        .foregroundStyle(Color.primary)
+                }
+                .buttonStyle(GlassButtonStyle(cornerRadius: 13))
 
-    var body: some View {
-        Button(action: action) {
-            VStack(spacing: 2) {
-                Text(title)
-                    .font(.system(size: 11, weight: isSelected ? .semibold : .medium))
-                    .foregroundStyle(isSelected ? (isActive ? Color.orange : Color.primary) : Color.primary)
-                    .lineLimit(1)
+                Spacer()
+
+                // Центральный дисплей точного времени
+                HStack(spacing: 4) {
+                    Image(systemName: "clock.badge.checkmark")
+                        .font(.system(size: 11))
+                        .foregroundStyle(Color.orange)
+
+                    Text(formattedCustomDuration)
+                        .font(.system(size: 14, weight: .bold, design: .rounded))
+                        .monospacedDigit()
+                        .foregroundStyle(Color.primary)
+                }
+
+                Spacer()
+
+                // Кнопка увеличения времени
+                Button {
+                    adjustCustomMinutes(by: stepInterval)
+                } label: {
+                    Image(systemName: "plus")
+                        .font(.system(size: 11, weight: .bold))
+                        .frame(width: 26, height: 26)
+                        .foregroundStyle(Color.primary)
+                }
+                .buttonStyle(GlassButtonStyle(cornerRadius: 13))
             }
-            .frame(maxWidth: .infinity)
-            .padding(.vertical, 7)
-            .padding(.horizontal, 4)
-            .background(
-                RoundedRectangle(cornerRadius: 8, style: .continuous)
-                    .fill(isSelected ? (isActive ? Color.orange.opacity(0.14) : Color.primary.opacity(0.08)) : Color(nsColor: .controlBackgroundColor).opacity(0.6))
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 8, style: .continuous)
-                            .stroke(isSelected ? (isActive ? Color.orange.opacity(0.4) : Color.primary.opacity(0.18)) : Color.primary.opacity(0.06), lineWidth: 0.5)
-                    )
-            )
+
+            // Быстрые умные чипы (Smart Jump Pills)
+            HStack(spacing: 5) {
+                quickJumpChip(title: "45м", minutes: 45)
+                quickJumpChip(title: "90м", minutes: 90)
+                quickJumpChip(title: "3ч", minutes: 180)
+                quickJumpChip(title: "8ч", minutes: 480)
+            }
         }
-        .buttonStyle(.plain)
+        .padding(9)
+        .glassCard(cornerRadius: 11)
+    }
+
+    private func quickJumpChip(title: String, minutes: Int) -> some View {
+        let isCurrent = state.customMinutes == minutes
+
+        return Button {
+            withAnimation(.spring(response: 0.25, dampingFraction: 0.75)) {
+                state.customMinutes = minutes
+                if state.isActive && state.selectedPreset == .custom {
+                    state.activate(preset: .custom)
+                }
+            }
+        } label: {
+            Text(title)
+                .font(.system(size: 10, weight: isCurrent ? .bold : .medium, design: .rounded))
+                .foregroundStyle(isCurrent ? Color.orange : Color.secondary)
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 4)
+        }
+        .buttonStyle(GlassButtonStyle(
+            isSelected: isCurrent,
+            isAccent: true,
+            cornerRadius: 7
+        ))
+    }
+
+    private var stepInterval: Int {
+        if state.customMinutes >= 60 {
+            return 15
+        } else {
+            return 5
+        }
+    }
+
+    private func adjustCustomMinutes(by delta: Int) {
+        withAnimation(.spring(response: 0.2, dampingFraction: 0.75)) {
+            let updated = max(5, min(720, state.customMinutes + delta))
+            state.customMinutes = updated
+            if state.isActive && state.selectedPreset == .custom {
+                state.activate(preset: .custom)
+            }
+        }
+    }
+
+    private var formattedCustomDuration: String {
+        let hours = state.customMinutes / 60
+        let mins = state.customMinutes % 60
+
+        let code = state.l10n.language.effectiveCode
+        let isUk = code == "uk"
+        let isCyrillic = ["ru", "uk"].contains(code)
+
+        let hSuffix = isUk ? "год" : (isCyrillic ? "ч" : "h")
+        let mSuffix = isUk ? "хв" : (isCyrillic ? "мин" : "m")
+
+        if hours > 0 {
+            if mins > 0 {
+                return "\(hours) \(hSuffix) \(mins) \(mSuffix)"
+            } else {
+                return "\(hours) \(hSuffix)"
+            }
+        } else {
+            return "\(mins) \(mSuffix)"
+        }
     }
 }

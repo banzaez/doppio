@@ -39,7 +39,8 @@ struct DoppioTests {
         #expect(l10n.modeMacOnly == "Тільки Mac")
         #expect(l10n.settingsTitle == "Налаштування")
         #expect(l10n.backButton == "Назад")
-        #expect(l10n.quitButton == "Завершити Doppio")
+        #expect(l10n.closeButton == "Закрити")
+        #expect(l10n.quitButton == "Закрити Doppio")
         #expect(l10n.settingsLaunchAtLogin == "Запуск під час входу в систему")
     }
 
