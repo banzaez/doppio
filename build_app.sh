@@ -10,6 +10,12 @@ CONTENTS_DIR="$APP_DIR/Contents"
 MACOS_DIR="$CONTENTS_DIR/MacOS"
 RESOURCES_DIR="$CONTENTS_DIR/Resources"
 
+echo "🎨 Проверяем наличие AppIcon.icns..."
+if [ ! -f "AppIcon.icns" ]; then
+    swift generate_icon.swift
+    iconutil -c icns AppIcon.iconset -o AppIcon.icns
+fi
+
 echo "📦 Формируем структуру $APP_DIR..."
 rm -rf "$APP_DIR"
 mkdir -p "$MACOS_DIR"
@@ -18,6 +24,9 @@ mkdir -p "$RESOURCES_DIR"
 # Копируем бинарный файл
 cp "$RELEASE_BIN" "$MACOS_DIR/Doppio"
 chmod +x "$MACOS_DIR/Doppio"
+
+# Копируем иконку приложения
+cp "AppIcon.icns" "$RESOURCES_DIR/AppIcon.icns"
 
 # Создаем Info.plist
 cat <<EOF > "$CONTENTS_DIR/Info.plist"
@@ -33,6 +42,10 @@ cat <<EOF > "$CONTENTS_DIR/Info.plist"
     <string>Doppio</string>
     <key>CFBundleDisplayName</key>
     <string>Doppio</string>
+    <key>CFBundleIconFile</key>
+    <string>AppIcon</string>
+    <key>CFBundleIconName</key>
+    <string>AppIcon</string>
     <key>CFBundlePackageType</key>
     <string>APPL</string>
     <key>CFBundleShortVersionString</key>
@@ -54,4 +67,4 @@ EOF
 echo "✍️ Подписываем приложение ad-hoc сигнатурой..."
 codesign -s - --force --deep "$APP_DIR"
 
-echo "✅ Приложение успешно собрано: $(pwd)/$APP_DIR"
+echo "✅ Приложение успешно собрано с иконкой: $(pwd)/$APP_DIR"
