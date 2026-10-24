@@ -57,6 +57,15 @@ public final class DoppioState {
 
     public var isLaunchAtLogin: Bool = false
 
+    // MARK: - Язык и локализация
+    public var language: AppLanguage = .system {
+        didSet {
+            UserDefaults.standard.set(language.rawValue, forKey: "appLanguage")
+            self.l10n = L10n(language: language)
+        }
+    }
+    public private(set) var l10n: L10n = L10n(language: .system)
+
     // MARK: - Питание
     public private(set) var batteryInfo: BatteryInfo? = nil
     public private(set) var lastDeactivationReason: String? = nil
@@ -119,6 +128,14 @@ public final class DoppioState {
                 self.customMinutes = minutes
             }
         }
+
+        if let rawLang = defaults.string(forKey: "appLanguage"),
+           let savedLang = AppLanguage(rawValue: rawLang) {
+            self.language = savedLang
+        } else {
+            self.language = .system
+        }
+        self.l10n = L10n(language: self.language)
     }
 
     // MARK: - Публичные действия
@@ -202,7 +219,7 @@ public final class DoppioState {
         }
     }
 
-    /// Короткая строка для меню-бара (например, "45м")
+    /// Короткая строка для меню-бара (например, "45м", "45хв", "45m")
     public var menuBarBadgeText: String? {
         guard isActive, showTimerInMenuBar, let remaining = remainingSeconds, remaining > 0 else {
             return nil
@@ -211,12 +228,16 @@ public final class DoppioState {
         let hours = Int(remaining) / 3600
         let minutes = (Int(remaining) % 3600) / 60
 
+        let code = l10n.language.effectiveCode
+        let hSuffix = code == "uk" ? "г" : (code == "ru" ? "ч" : "h")
+        let mSuffix = code == "uk" ? "хв" : (code == "ru" ? "м" : "m")
+
         if hours > 0 {
-            return "\(hours)ч\(minutes > 0 ? " \(minutes)м" : "")"
+            return "\(hours)\(hSuffix)\(minutes > 0 ? " \(minutes)\(mSuffix)" : "")"
         } else if minutes > 0 {
-            return "\(minutes)м"
+            return "\(minutes)\(mSuffix)"
         } else {
-            return "<1м"
+            return "<1\(mSuffix)"
         }
     }
 

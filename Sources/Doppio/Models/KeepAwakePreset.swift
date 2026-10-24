@@ -22,26 +22,30 @@ public enum KeepAwakePreset: Equatable, Hashable, Identifiable, CaseIterable, Se
         }
     }
 
-    public var title: String {
+    public func title(using l10n: L10n) -> String {
         switch self {
-        case .indefinite: return "Бессрочно"
-        case .minutes15: return "15 мин"
-        case .minutes30: return "30 мин"
-        case .hour1: return "1 час"
-        case .hours2: return "2 часа"
-        case .hours4: return "4 часа"
-        case .custom: return "Свой таймер"
+        case .indefinite: return l10n.presetIndefinite
+        case .minutes15: return l10n.presetMinutes(15)
+        case .minutes30: return l10n.presetMinutes(30)
+        case .hour1: return l10n.presetHours(1)
+        case .hours2: return l10n.presetHours(2)
+        case .hours4: return l10n.presetHours(4)
+        case .custom: return l10n.presetCustom
         }
+    }
+
+    public var title: String {
+        title(using: L10n(language: .system))
     }
 
     public var shortTitle: String {
         switch self {
         case .indefinite: return "∞"
-        case .minutes15: return "15м"
-        case .minutes30: return "30м"
-        case .hour1: return "1ч"
-        case .hours2: return "2ч"
-        case .hours4: return "4ч"
+        case .minutes15: return "15m"
+        case .minutes30: return "30m"
+        case .hour1: return "1h"
+        case .hours2: return "2h"
+        case .hours4: return "4h"
         case .custom: return "⏱"
         }
     }

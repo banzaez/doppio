@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// Карточка переключателя в стиле Control Center macOS 27
+/// Карточка переключателя в стиле Control Center macOS 27 с поддержкой локализации
 struct ControlCenterHeroCard: View {
     @Bindable var state: DoppioState
 
@@ -80,12 +80,12 @@ struct ControlCenterHeroCard: View {
     private var statusSubtitle: String {
         if state.isActive {
             if let _ = state.remainingSeconds {
-                return "Осталось: \(state.formattedRemainingTime)"
+                return state.l10n.statusRemaining(state.formattedRemainingTime)
             } else {
-                return "Бодрствует бессрочно"
+                return state.l10n.statusAwakeIndefinitely
             }
         } else {
-            return "Сон разрешён"
+            return state.l10n.statusSleepAllowed
         }
     }
 }

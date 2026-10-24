@@ -20,15 +20,50 @@ struct DoppioTests {
     func batteryInfoFormatting() {
         let charging = BatteryInfo(percentage: 85, isCharging: true, isPluggedIn: true)
         #expect(charging.iconName == "battery.100.bolt")
-        #expect(charging.description.contains("Зарядка"))
 
         let onBattery = BatteryInfo(percentage: 45, isCharging: false, isPluggedIn: false)
         #expect(onBattery.iconName == "battery.50")
-        #expect(onBattery.description.contains("Батарея"))
 
         let plugged = BatteryInfo(percentage: 100, isCharging: false, isPluggedIn: true)
         #expect(plugged.iconName == "battery.100")
-        #expect(plugged.description.contains("Сеть"))
+    }
+
+    @Test("Проверка локализации: Украинский язык")
+    func ukrainianLocalization() {
+        let l10n = L10n(language: .ukrainian)
+        #expect(l10n.statusAwakeIndefinitely == "Бадьорий безстроково")
+        #expect(l10n.presetIndefinite == "Безстроково")
+        #expect(l10n.modeDisplayAndMac == "Екран і Mac")
+        #expect(l10n.modeMacOnly == "Тільки Mac")
+        #expect(l10n.settingsTitle == "Налаштування")
+        #expect(l10n.backButton == "Назад")
+        #expect(l10n.quitButton == "Завершити Doppio")
+        #expect(l10n.settingsLaunchAtLogin == "Запуск під час входу в систему")
+    }
+
+    @Test("Проверка локализации: Русский, Английский и Немецкий")
+    func multiLanguageLocalization() {
+        let en = L10n(language: .english)
+        #expect(en.statusAwakeIndefinitely == "Awake indefinitely")
+        #expect(en.presetIndefinite == "Indefinite")
+        #expect(en.modeDisplayAndMac == "Screen & Mac")
+        #expect(en.settingsTitle == "Settings")
+
+        let ru = L10n(language: .russian)
+        #expect(ru.statusAwakeIndefinitely == "Бодрствует бессрочно")
+        #expect(ru.modeDisplayAndMac == "Экран и Mac")
+        #expect(ru.settingsTitle == "Настройки")
+
+        let de = L10n(language: .german)
+        #expect(de.statusAwakeIndefinitely == "Dauerhaft aktiv")
+        #expect(de.settingsTitle == "Einstellungen")
+    }
+
+    @Test("Проверка автоматического определения языка системы")
+    func systemLanguageDetection() {
+        let detected = AppLanguage.detectSystemLanguageCode()
+        #expect(!detected.isEmpty)
+        #expect(["en", "uk", "ru", "de", "fr", "es"].contains(detected))
     }
 
     @Test("Проверка IOKit SleepAssertionService")
@@ -54,13 +89,17 @@ struct DoppioTests {
         #expect(await service.activeType == nil)
     }
 
-    @Test("Проверка переключения DoppioState")
+    @Test("Проверка переключения DoppioState и языка")
     @MainActor
     func doppioStateToggleAndActivation() async {
         let state = DoppioState()
 
         #expect(!state.isActive)
         #expect(state.remainingSeconds == nil)
+
+        // Смена языка на украинский
+        state.language = .ukrainian
+        #expect(state.l10n.presetIndefinite == "Безстроково")
 
         // Активация на 15 минут
         state.activate(preset: .minutes15)

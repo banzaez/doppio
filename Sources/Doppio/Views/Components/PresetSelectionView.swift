@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// Секция выбора длительности в стиле macOS 27
+/// Секция выбора длительности с полной локализацией
 struct PresetSelectionView: View {
     @Bindable var state: DoppioState
 
@@ -15,12 +15,12 @@ struct PresetSelectionView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text("ТАЙМЕР БОДРСТВОВАНИЯ")
+            Text(state.l10n.sectionTimer)
                 .font(.system(size: 10, weight: .semibold))
                 .foregroundStyle(Color.secondary)
                 .padding(.horizontal, 2)
 
-            // Сетка из 6 основных пресетов (3x2) с достаточным местом для текста
+            // Сетка из 6 основных пресетов (3x2)
             LazyVGrid(columns: [
                 GridItem(.flexible(), spacing: 6),
                 GridItem(.flexible(), spacing: 6),
@@ -28,7 +28,7 @@ struct PresetSelectionView: View {
             ], spacing: 6) {
                 ForEach(standardPresets) { preset in
                     PresetButton(
-                        preset: preset,
+                        title: preset.title(using: state.l10n),
                         isSelected: state.selectedPreset == preset,
                         isActive: state.isActive && state.selectedPreset == preset
                     ) {
@@ -52,13 +52,13 @@ struct PresetSelectionView: View {
                         .font(.system(size: 11))
                         .foregroundStyle(state.selectedPreset == .custom ? Color.orange : Color.secondary)
 
-                    Text("Свой таймер")
+                    Text(state.l10n.presetCustom)
                         .font(.system(size: 11, weight: state.selectedPreset == .custom ? .semibold : .regular))
                         .foregroundStyle(state.selectedPreset == .custom ? Color.primary : Color.secondary)
 
                     Spacer()
 
-                    Text("\(state.customMinutes) мин")
+                    Text(state.l10n.presetMinutes(state.customMinutes))
                         .font(.system(size: 11, weight: .bold, design: .rounded))
                         .foregroundStyle(state.selectedPreset == .custom ? Color.orange : Color.secondary)
                 }
@@ -79,11 +79,11 @@ struct PresetSelectionView: View {
             if state.selectedPreset == .custom {
                 VStack(spacing: 4) {
                     HStack {
-                        Text("5 мин")
+                        Text(state.l10n.presetMinutes(5))
                             .font(.system(size: 9))
                             .foregroundStyle(Color.secondary)
                         Spacer()
-                        Text("4 часа")
+                        Text(state.l10n.presetHours(4))
                             .font(.system(size: 9))
                             .foregroundStyle(Color.secondary)
                     }
@@ -114,7 +114,7 @@ struct PresetSelectionView: View {
 
 /// Кнопка стандартного пресета с комфортным размером для текста
 private struct PresetButton: View {
-    let preset: KeepAwakePreset
+    let title: String
     let isSelected: Bool
     let isActive: Bool
     let action: () -> Void
@@ -122,7 +122,7 @@ private struct PresetButton: View {
     var body: some View {
         Button(action: action) {
             VStack(spacing: 2) {
-                Text(preset.title)
+                Text(title)
                     .font(.system(size: 11, weight: isSelected ? .semibold : .medium))
                     .foregroundStyle(isSelected ? (isActive ? Color.orange : Color.primary) : Color.primary)
                     .lineLimit(1)

@@ -27,13 +27,17 @@ public struct BatteryInfo: Equatable, Sendable {
         }
     }
 
-    public var description: String {
+    public func description(using l10n: L10n) -> String {
         if isCharging {
-            return "\(percentage)% • Зарядка"
+            return "\(percentage)% • \(l10n.batteryCharging)"
         } else if isPluggedIn {
-            return "\(percentage)% • Сеть"
+            return "\(percentage)% • \(l10n.batteryAC)"
         } else {
-            return "\(percentage)% • Батарея"
+            return "\(percentage)% • \(l10n.batteryOnBattery)"
         }
+    }
+
+    public var description: String {
+        description(using: L10n(language: .system))
     }
 }

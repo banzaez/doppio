@@ -1,7 +1,7 @@
 import SwiftUI
 import AppKit
 
-/// Экран настроек Doppio в аутентичном стиле macOS 27
+/// Экран настроек Doppio с поддержкой мультиязычности и нативной локализацией macOS
 struct SettingsView: View {
     @Bindable var state: DoppioState
     let onBack: () -> Void
@@ -14,7 +14,7 @@ struct SettingsView: View {
                     HStack(spacing: 4) {
                         Image(systemName: "chevron.left")
                             .font(.system(size: 11, weight: .bold))
-                        Text("Назад")
+                        Text(state.l10n.backButton)
                             .font(.system(size: 12, weight: .medium))
                     }
                     .foregroundStyle(Color.orange)
@@ -23,7 +23,7 @@ struct SettingsView: View {
 
                 Spacer()
 
-                Text("Настройки")
+                Text(state.l10n.settingsTitle)
                     .font(.system(size: 13, weight: .semibold))
                     .foregroundStyle(Color.primary)
 
@@ -35,10 +35,45 @@ struct SettingsView: View {
             }
             .padding(.bottom, 2)
 
-            // Блок 1: Системные параметры
+            // Блок 1: Язык интерфейса
+            VStack(spacing: 6) {
+                HStack(spacing: 8) {
+                    Image(systemName: "globe")
+                        .font(.system(size: 12))
+                        .foregroundStyle(Color.secondary)
+                        .frame(width: 16)
+
+                    Text(state.l10n.settingsLanguage)
+                        .font(.system(size: 11))
+                        .foregroundStyle(Color.primary)
+
+                    Spacer()
+
+                    Picker("", selection: $state.language) {
+                        ForEach(AppLanguage.allCases) { lang in
+                            Text(lang.displayName)
+                                .tag(lang)
+                        }
+                    }
+                    .pickerStyle(.menu)
+                    .controlSize(.small)
+                    .frame(maxWidth: 160)
+                }
+            }
+            .padding(10)
+            .background(
+                RoundedRectangle(cornerRadius: 10, style: .continuous)
+                    .fill(Color(nsColor: .controlBackgroundColor).opacity(0.8))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 10, style: .continuous)
+                            .stroke(Color.primary.opacity(0.08), lineWidth: 0.5)
+                    )
+            )
+
+            // Блок 2: Системные параметры
             VStack(spacing: 8) {
                 settingToggleRow(
-                    title: "Запуск при входе в систему",
+                    title: state.l10n.settingsLaunchAtLogin,
                     icon: "arrow.clockwise",
                     isOn: Binding(
                         get: { state.isLaunchAtLogin },
@@ -50,7 +85,7 @@ struct SettingsView: View {
                     .padding(.horizontal, 4)
 
                 settingToggleRow(
-                    title: "Отображать таймер в строке меню",
+                    title: state.l10n.settingsTimerInMenuBar,
                     icon: "clock",
                     isOn: $state.showTimerInMenuBar
                 )
@@ -59,7 +94,7 @@ struct SettingsView: View {
                     .padding(.horizontal, 4)
 
                 settingToggleRow(
-                    title: "Звуковые сигналы",
+                    title: state.l10n.settingsSound,
                     icon: "speaker.wave.2",
                     isOn: $state.soundFeedbackEnabled
                 )
@@ -74,10 +109,10 @@ struct SettingsView: View {
                     )
             )
 
-            // Блок 2: Защита аккумулятора
+            // Блок 3: Защита аккумулятора
             VStack(alignment: .leading, spacing: 8) {
                 settingToggleRow(
-                    title: "Защита батареи",
+                    title: state.l10n.settingsBatteryProtection,
                     icon: "bolt.shield",
                     isOn: $state.batteryProtectionEnabled
                 )
@@ -88,7 +123,7 @@ struct SettingsView: View {
 
                     VStack(alignment: .leading, spacing: 4) {
                         HStack {
-                            Text("Выключать бодрствование при заряде ниже:")
+                            Text(state.l10n.settingsBatteryThresholdDesc)
                                 .font(.system(size: 10))
                                 .foregroundStyle(Color.secondary)
 
@@ -124,7 +159,7 @@ struct SettingsView: View {
                     )
             )
 
-            // Блок 3: Выход из приложения
+            // Блок 4: Выход из приложения
             HStack {
                 Text("Doppio v1.0.0")
                     .font(.system(size: 10))
@@ -139,7 +174,7 @@ struct SettingsView: View {
                     HStack(spacing: 4) {
                         Image(systemName: "power")
                             .font(.system(size: 10, weight: .bold))
-                        Text("Завершить Doppio")
+                        Text(state.l10n.quitButton)
                             .font(.system(size: 11, weight: .medium))
                     }
                     .foregroundStyle(Color.red.opacity(0.9))

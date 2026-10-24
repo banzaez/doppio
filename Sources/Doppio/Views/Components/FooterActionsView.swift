@@ -13,7 +13,7 @@ struct FooterActionsView: View {
                 HStack(spacing: 5) {
                     Image(systemName: "gearshape")
                         .font(.system(size: 11))
-                    Text("Настройки")
+                    Text(state.l10n.settingsTitle)
                         .font(.system(size: 11, weight: .medium))
                 }
                 .foregroundStyle(Color.secondary)
@@ -33,6 +33,7 @@ struct FooterActionsView: View {
                         .font(.system(size: 11, weight: .medium, design: .rounded))
                         .foregroundStyle(Color.secondary)
                 }
+                .help(info.description(using: state.l10n))
             }
 
             Spacer()
@@ -47,7 +48,7 @@ struct FooterActionsView: View {
                     .foregroundStyle(Color.secondary.opacity(0.8))
             }
             .buttonStyle(.plain)
-            .help("Завершить Doppio")
+            .help(state.l10n.quitButton)
         }
         .padding(.horizontal, 4)
     }
