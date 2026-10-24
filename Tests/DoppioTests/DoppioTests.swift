@@ -142,5 +142,12 @@ struct DoppioTests {
         // Окно должно иметь ширину 320 и полноценную высоту меню (более 250pt, не 16pt!)
         #expect(size.width >= 310 && size.width <= 330)
         #expect(size.height >= 250)
+
+        // При выборе своего таймера окно корректно вычисляет расширенную высоту
+        state.selectedPreset = .custom
+        let customView = DoppioPopoverView(state: state)
+        let customHosting = NSHostingView(rootView: customView)
+        let customSize = customHosting.fittingSize
+        #expect(customSize.height >= size.height)
     }
 }

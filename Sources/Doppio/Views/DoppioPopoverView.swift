@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// Главное всплывающее окно Doppio в строке меню
+/// Главное всплывающее окно Doppio в строке меню с динамическим авто-ресайзом
 struct DoppioPopoverView: View {
     @Bindable var state: DoppioState
 
@@ -28,6 +28,8 @@ struct DoppioPopoverView: View {
         }
         .padding(14)
         .frame(width: 320)
+        .fixedSize(horizontal: false, vertical: true)
+        .background(WindowAutoResizer())
         .onAppear {
             state.refreshBatteryInfo()
         }

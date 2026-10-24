@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// Секция выбора длительности в стеклянном стиле macOS 27
+/// Секция выбора длительности в стеклянном стиле macOS 27 с адаптивным таймером
 struct PresetSelectionView: View {
     @Bindable var state: DoppioState
 
@@ -20,7 +20,7 @@ struct PresetSelectionView: View {
                 .foregroundStyle(Color.secondary)
                 .padding(.horizontal, 2)
 
-            // Сетка из 6 основных пресетов со стеклянным стилем
+            // Сетка из 6 основных пресетов
             LazyVGrid(columns: [
                 GridItem(.flexible(), spacing: 6),
                 GridItem(.flexible(), spacing: 6),
@@ -49,98 +49,102 @@ struct PresetSelectionView: View {
                 }
             }
 
-            // Кнопка переключения в режим своего таймера
-            Button {
-                withAnimation(.spring(response: 0.3, dampingFraction: 0.75)) {
-                    state.selectedPreset = .custom
-                    state.activate(preset: .custom)
-                }
-            } label: {
-                HStack(spacing: 8) {
-                    Image(systemName: "timer")
-                        .font(.system(size: 12))
-                        .foregroundStyle(state.selectedPreset == .custom ? Color.orange : Color.secondary)
-
-                    Text(state.l10n.presetCustom)
-                        .font(.system(size: 11, weight: state.selectedPreset == .custom ? .semibold : .regular))
-                        .foregroundStyle(state.selectedPreset == .custom ? Color.primary : Color.secondary)
-
-                    Spacer()
-
-                    Text(formattedCustomDuration)
-                        .font(.system(size: 11, weight: .bold, design: .rounded))
-                        .foregroundStyle(state.selectedPreset == .custom ? Color.orange : Color.secondary)
-                }
-                .padding(.horizontal, 10)
-                .padding(.vertical, 7)
-                .frame(maxWidth: .infinity)
-            }
-            .buttonStyle(GlassButtonStyle(
-                isSelected: state.selectedPreset == .custom,
-                isAccent: state.isActive,
-                cornerRadius: 9
-            ))
-
-            // Интерактивная капсула точного времени вместо неудобного ползунка
+            // Блок «Свой таймер»: когда не выбран — компактная кнопка, когда выбран — интерактивная капсула
             if state.selectedPreset == .custom {
                 customTimeCapsule
-                    .transition(.opacity.combined(with: .move(edge: .top)))
+                    .transition(.opacity)
+            } else {
+                customTimerInactiveButton
+                    .transition(.opacity)
             }
         }
     }
 
-    /// Тактильная капсула управления своим временем
+    /// Компактная кнопка выбора своего таймера в неактивном состоянии
+    private var customTimerInactiveButton: some View {
+        Button {
+            withAnimation(.spring(response: 0.28, dampingFraction: 0.78)) {
+                state.selectedPreset = .custom
+                state.activate(preset: .custom)
+            }
+        } label: {
+            HStack(spacing: 8) {
+                Image(systemName: "timer")
+                    .font(.system(size: 12))
+                    .foregroundStyle(Color.secondary)
+
+                Text(state.l10n.presetCustom)
+                    .font(.system(size: 11, weight: .regular))
+                    .foregroundStyle(Color.primary)
+
+                Spacer()
+
+                Text(formattedCustomDuration)
+                    .font(.system(size: 11, weight: .medium, design: .rounded))
+                    .foregroundStyle(Color.secondary)
+            }
+            .padding(.horizontal, 10)
+            .padding(.vertical, 7)
+            .frame(maxWidth: .infinity)
+        }
+        .buttonStyle(GlassButtonStyle(
+            isSelected: false,
+            cornerRadius: 9
+        ))
+    }
+
+    /// Интерактивная капсула настройки своего времени
     private var customTimeCapsule: some View {
-        VStack(spacing: 8) {
-            HStack(spacing: 10) {
-                // Кнопка уменьшения времени
+        VStack(spacing: 7) {
+            HStack(spacing: 8) {
+                // Кнопка уменьшения
                 Button {
                     adjustCustomMinutes(by: -stepInterval)
                 } label: {
                     Image(systemName: "minus")
                         .font(.system(size: 11, weight: .bold))
-                        .frame(width: 26, height: 26)
+                        .frame(width: 24, height: 24)
                         .foregroundStyle(Color.primary)
                 }
-                .buttonStyle(GlassButtonStyle(cornerRadius: 13))
+                .buttonStyle(GlassButtonStyle(cornerRadius: 12))
 
                 Spacer()
 
-                // Центральный дисплей точного времени
-                HStack(spacing: 4) {
+                // Центральный дисплей
+                HStack(spacing: 5) {
                     Image(systemName: "clock.badge.checkmark")
                         .font(.system(size: 11))
                         .foregroundStyle(Color.orange)
 
                     Text(formattedCustomDuration)
-                        .font(.system(size: 14, weight: .bold, design: .rounded))
+                        .font(.system(size: 13, weight: .bold, design: .rounded))
                         .monospacedDigit()
                         .foregroundStyle(Color.primary)
                 }
 
                 Spacer()
 
-                // Кнопка увеличения времени
+                // Кнопка увеличения
                 Button {
                     adjustCustomMinutes(by: stepInterval)
                 } label: {
                     Image(systemName: "plus")
                         .font(.system(size: 11, weight: .bold))
-                        .frame(width: 26, height: 26)
+                        .frame(width: 24, height: 24)
                         .foregroundStyle(Color.primary)
                 }
-                .buttonStyle(GlassButtonStyle(cornerRadius: 13))
+                .buttonStyle(GlassButtonStyle(cornerRadius: 12))
             }
 
-            // Быстрые умные чипы (Smart Jump Pills)
-            HStack(spacing: 5) {
+            // Быстрые умные чипы
+            HStack(spacing: 4) {
                 quickJumpChip(title: "45м", minutes: 45)
                 quickJumpChip(title: "90м", minutes: 90)
                 quickJumpChip(title: "3ч", minutes: 180)
                 quickJumpChip(title: "8ч", minutes: 480)
             }
         }
-        .padding(9)
+        .padding(8)
         .glassCard(cornerRadius: 11)
     }
 
@@ -148,7 +152,7 @@ struct PresetSelectionView: View {
         let isCurrent = state.customMinutes == minutes
 
         return Button {
-            withAnimation(.spring(response: 0.25, dampingFraction: 0.75)) {
+            withAnimation(.spring(response: 0.22, dampingFraction: 0.75)) {
                 state.customMinutes = minutes
                 if state.isActive && state.selectedPreset == .custom {
                     state.activate(preset: .custom)
