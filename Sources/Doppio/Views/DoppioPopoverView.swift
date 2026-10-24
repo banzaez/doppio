@@ -12,31 +12,22 @@ struct DoppioPopoverView: View {
     @State private var currentScreen: Screen = .main
 
     var body: some View {
-        ScrollView(.vertical, showsIndicators: false) {
-            VStack(spacing: 12) {
-                switch currentScreen {
-                case .main:
-                    mainScreenView
-                        .transition(.asymmetric(
-                            insertion: .opacity.combined(with: .move(edge: .leading)),
-                            removal: .opacity.combined(with: .move(edge: .leading))
-                        ))
-                case .settings:
-                    SettingsView(state: state) {
-                        withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
-                            currentScreen = .main
-                        }
+        VStack(spacing: 0) {
+            switch currentScreen {
+            case .main:
+                mainScreenView
+                    .transition(.opacity)
+            case .settings:
+                SettingsView(state: state) {
+                    withAnimation(.easeInOut(duration: 0.2)) {
+                        currentScreen = .main
                     }
-                    .transition(.asymmetric(
-                        insertion: .opacity.combined(with: .move(edge: .trailing)),
-                        removal: .opacity.combined(with: .move(edge: .trailing))
-                    ))
                 }
+                .transition(.opacity)
             }
-            .padding(12)
         }
+        .padding(14)
         .frame(width: 320)
-        .background(.ultraThinMaterial)
         .onAppear {
             state.refreshBatteryInfo()
         }
@@ -44,7 +35,7 @@ struct DoppioPopoverView: View {
 
     @ViewBuilder
     private var mainScreenView: some View {
-        VStack(spacing: 11) {
+        VStack(spacing: 12) {
             // Верхний блок Control Center с тумблером
             ControlCenterHeroCard(state: state)
 
@@ -59,7 +50,7 @@ struct DoppioPopoverView: View {
 
             // Нижняя панель действий
             FooterActionsView(state: state) {
-                withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
+                withAnimation(.easeInOut(duration: 0.2)) {
                     currentScreen = .settings
                 }
             }

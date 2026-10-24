@@ -1,5 +1,7 @@
 import Testing
 import Foundation
+import AppKit
+import SwiftUI
 @testable import Doppio
 
 @Suite("Doppio Core Tests")
@@ -126,5 +128,18 @@ struct DoppioTests {
 
         state.activate(preset: .hour1)
         #expect(state.formattedRemainingTime.contains(":"))
+    }
+
+    @Test("Проверка размеров всплывающего окна (предотвращение схлопывания в полосу)")
+    @MainActor
+    func popoverFittingDimensions() async {
+        let state = DoppioState()
+        let view = DoppioPopoverView(state: state)
+        let hosting = NSHostingView(rootView: view)
+        let size = hosting.fittingSize
+
+        // Окно должно иметь ширину 320 и полноценную высоту меню (более 250pt, не 16pt!)
+        #expect(size.width >= 310 && size.width <= 330)
+        #expect(size.height >= 250)
     }
 }
