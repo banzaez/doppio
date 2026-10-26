@@ -82,8 +82,18 @@ public struct L10n: Sendable {
 
     public func presetHours(_ hours: Int) -> String {
         switch code {
-        case "uk": return hours == 1 ? "1 год" : "\(hours) год"
-        case "ru": return hours == 1 ? "1 час" : "\(hours) часа"
+        case "uk":
+            return "\(hours) год"
+        case "ru":
+            let mod10 = hours % 10
+            let mod100 = hours % 100
+            if mod10 == 1 && mod100 != 11 {
+                return "\(hours) час"
+            } else if (2...4).contains(mod10) && !(12...14).contains(mod100) {
+                return "\(hours) часа"
+            } else {
+                return "\(hours) часов"
+            }
         case "de": return "\(hours) Std"
         case "fr": return "\(hours) h"
         case "es": return "\(hours) h"
@@ -285,17 +295,6 @@ public struct L10n: Sendable {
         case "fr": return "Lancer à la connexion"
         case "es": return "Iniciar al arrancar el sistema"
         default:   return "Launch at login"
-        }
-    }
-
-    public var settingsTimerInMenuBar: String {
-        switch code {
-        case "uk": return "Показувати таймер у рядку меню"
-        case "ru": return "Отображать таймер в строке меню"
-        case "de": return "Timer in Menüleiste anzeigen"
-        case "fr": return "Afficher la minuterie dans la barre"
-        case "es": return "Mostrar temporizador en la barra"
-        default:   return "Show timer in menu bar"
         }
     }
 
@@ -664,40 +663,6 @@ public struct L10n: Sendable {
         case "fr": return "Activer sur écran externe"
         case "es": return "Activar con pantalla externa"
         default:   return "Activate on external display"
-        }
-    }
-
-    // MARK: - Таймер и бейджи
-    public var timerRemainingTitle: String {
-        switch code {
-        case "uk": return "Залишилося часу"
-        case "ru": return "Осталось времени"
-        case "de": return "Verbleibende Zeit"
-        case "fr": return "Temps restant"
-        case "es": return "Tiempo restante"
-        default:   return "Time remaining"
-        }
-    }
-
-    public var switchIndefinite: String {
-        switch code {
-        case "uk": return "В безстроково"
-        case "ru": return "В бессрочно"
-        case "de": return "Auf Unbegrenzt"
-        case "fr": return "En indéfini"
-        case "es": return "A indefinido"
-        default:   return "To indefinite"
-        }
-    }
-
-    public var batteryThresholdNote: String {
-        switch code {
-        case "uk": return "автостоп"
-        case "ru": return "автостоп"
-        case "de": return "Autostopp"
-        case "fr": return "arrêt auto"
-        case "es": return "parada auto"
-        default:   return "auto-stop"
         }
     }
 }

@@ -7,6 +7,10 @@ import SwiftUI
 @Suite("Doppio Core Tests")
 struct DoppioTests {
 
+    private func makeTestDefaults() -> UserDefaults {
+        UserDefaults(suiteName: "com.doppio.tests.\(UUID().uuidString)")!
+    }
+
     @Test("Проверка длительностей пресетов")
     func presetDurations() {
         #expect(KeepAwakePreset.indefinite.duration == nil)
@@ -44,18 +48,23 @@ struct DoppioTests {
         #expect(l10n.settingsLaunchAtLogin == "Запуск під час входу в систему")
     }
 
-    @Test("Проверка локализации: Русский, Английский и Немецкий")
+    @Test("Проверка локализации: Русский, Английский и Немецкий + плюрализация часов")
     func multiLanguageLocalization() {
         let en = L10n(language: .english)
         #expect(en.statusAwakeIndefinitely == "Awake indefinitely")
         #expect(en.presetIndefinite == "Indefinite")
         #expect(en.modeDisplayAndMac == "Screen & Mac")
         #expect(en.settingsTitle == "Settings")
+        #expect(en.presetHours(1) == "1 hour")
+        #expect(en.presetHours(5) == "5 hours")
 
         let ru = L10n(language: .russian)
         #expect(ru.statusAwakeIndefinitely == "Бодрствует бессрочно")
         #expect(ru.modeDisplayAndMac == "Экран и Mac")
         #expect(ru.settingsTitle == "Настройки")
+        #expect(ru.presetHours(1) == "1 час")
+        #expect(ru.presetHours(2) == "2 часа")
+        #expect(ru.presetHours(5) == "5 часов")
 
         let de = L10n(language: .german)
         #expect(de.statusAwakeIndefinitely == "Dauerhaft aktiv")
@@ -82,8 +91,7 @@ struct DoppioTests {
     @MainActor
     func sleepAssertionTypeOrderAndDefault() {
         #expect(SleepAssertionType.allCases == [.systemOnly, .systemAndDisplay])
-        let testDefaults = UserDefaults(suiteName: "test-sleep-assertion-\(UUID().uuidString)")!
-        let state = DoppioState(defaults: testDefaults)
+        let state = DoppioState(defaults: makeTestDefaults())
         #expect(state.assertionType == .systemOnly)
     }
 
@@ -113,8 +121,7 @@ struct DoppioTests {
     @Test("Проверка переключения DoppioState и языка")
     @MainActor
     func doppioStateToggleAndActivation() async {
-        let testDefaults = UserDefaults(suiteName: "test-toggle-\(UUID().uuidString)")!
-        let state = DoppioState(defaults: testDefaults)
+        let state = DoppioState(defaults: makeTestDefaults())
 
         #expect(!state.isActive)
         #expect(state.remainingSeconds == nil)
@@ -141,7 +148,7 @@ struct DoppioTests {
     @Test("Проверка форматирования времени")
     @MainActor
     func formattingTime() async {
-        let state = DoppioState()
+        let state = DoppioState(defaults: makeTestDefaults())
 
         // По умолчанию без таймера
         #expect(state.formattedRemainingTime == "∞")
@@ -150,24 +157,30 @@ struct DoppioTests {
         #expect(state.formattedRemainingTime.contains(":"))
     }
 
-    @Test("Проверка размеров всплывающего окна (предотвращение схлопывания в полосу)")
+    @Test("Проверка размеров всплывающего окна и экрана настроек (адаптивность и отсутствие переполнения)")
     @MainActor
     func popoverFittingDimensions() async {
-        let state = DoppioState()
+        let state = DoppioState(defaults: makeTestDefaults())
         let view = DoppioPopoverView(state: state)
         let hosting = NSHostingView(rootView: view)
         let size = hosting.fittingSize
 
         // Окно должно иметь ширину 320 и полноценную высоту меню (более 250pt, не 16pt!)
         #expect(size.width >= 310 && size.width <= 330)
-        #expect(size.height >= 250)
+        #expect(size.height >= 250 && size.height <= 380)
 
-        // При выборе своего таймера окно корректно вычисляет расширенную высоту
-        state.selectedPreset = .custom
-        let customView = DoppioPopoverView(state: state)
-        let customHosting = NSHostingView(rootView: customView)
-        let customSize = customHosting.fittingSize
-        #expect(customSize.height >= size.height)
+        // При активации таймера с полосой прогресса и бейджем триггера высота карточки остаётся неизменной (не скачет!)
+        state.activate(preset: .minutes30)
+        let activeHosting = NSHostingView(rootView: DoppioPopoverView(state: state))
+        #expect(abs(activeHosting.fittingSize.height - size.height) < 1.0)
+
+        // Проверяем экран настроек с 6 добавленными приложениями — благодаря адаптивному ScrollView высота компактна и влезает на любой экран
+        for i in 1...6 {
+            state.addTargetApp(TriggerApp(bundleIdentifier: "com.test.app\(i)", displayName: "Application \(i)"))
+        }
+        let settingsHosting = NSHostingView(rootView: SettingsView(state: state, onBack: {}).frame(width: 294))
+        let settingsSize = settingsHosting.fittingSize
+        #expect(settingsSize.height >= 300 && settingsSize.height <= 560)
     }
 
     @Test("Проверка причин деактивации и локализации")
@@ -187,7 +200,7 @@ struct DoppioTests {
         #expect(reasonBattery.localized(using: ru) == "Низкий заряд батареи (15%)")
         #expect(reasonBattery.localized(using: uk) == "Низький заряд батареї (15%)")
 
-        let state = DoppioState()
+        let state = DoppioState(defaults: makeTestDefaults())
         state.deactivate(reason: .timerExpired)
         #expect(state.lastDeactivationReason == .timerExpired)
         #expect(state.localizedDeactivationReason != nil)
@@ -215,8 +228,10 @@ struct DoppioTests {
         }
     }
 
-    private final class MockBattery: BatteryMonitoring, @unchecked Sendable {
+    @MainActor
+    private final class MockBattery: BatteryMonitoring {
         var mockInfo: BatteryInfo?
+        var onChange: (@MainActor () -> Void)?
 
         init(mockInfo: BatteryInfo?) {
             self.mockInfo = mockInfo
@@ -225,9 +240,18 @@ struct DoppioTests {
         func fetchBatteryInfo() -> BatteryInfo? {
             mockInfo
         }
+
+        func startMonitoring(onChange: @escaping @MainActor () -> Void) {
+            self.onChange = onChange
+        }
+
+        func stopMonitoring() {
+            self.onChange = nil
+        }
     }
 
-    private final class MockLaunchAtLogin: LaunchAtLoginManaging, @unchecked Sendable {
+    @MainActor
+    private final class MockLaunchAtLogin: LaunchAtLoginManaging {
         var isEnabled: Bool = false
         func setEnabled(_ enabled: Bool) -> Bool {
             self.isEnabled = enabled
@@ -235,29 +259,87 @@ struct DoppioTests {
         }
     }
 
-    @Test("Проверка внедрения зависимостей и защиты батареи при разряде")
+    @MainActor
+    private final class MockSmartTrigger: SmartTriggerManaging {
+        var onRequestActivation: (@MainActor (SessionTriggerSource) -> Void)?
+        var onRequestDeactivation: (@MainActor (DeactivationReason) -> Void)?
+        var externalDisplayConnected: Bool = false
+        var runningBundles: Set<String> = []
+
+        func startMonitoring() {}
+        func stopMonitoring() {}
+        func checkCurrentState() {
+            if externalDisplayConnected {
+                onRequestActivation?(.externalDisplay)
+            }
+        }
+        func hasExternalDisplayConnected() -> Bool { externalDisplayConnected }
+        func runningBundleIdentifiers() -> Set<String> { runningBundles }
+        func candidateRunningApps(excluding existingBundleIds: Set<String>) -> [TriggerApp] { [] }
+        func triggerApp(from url: URL) -> TriggerApp? { nil }
+    }
+
+    @MainActor
+    private final class MockNotificationService: AppNotificationManaging {
+        var onActionReceived: (@MainActor (NotificationPreExpiryAction) -> Void)?
+        func requestAuthorization() async -> Bool { true }
+        func schedulePreExpiryNotification(title: String, body: String, l10n: L10n) async {}
+        func cancelPendingNotifications() async {}
+    }
+
+    @MainActor
+    private final class MockQuickClickMonitor: QuickClickMonitoring {
+        var isEnabled: Bool = true
+        var onQuickToggle: (() -> Void)?
+        func startMonitoring() {}
+        func stopMonitoring() {}
+    }
+
+    @Test("Проверка внедрения зависимостей, защиты батареи и событийного триггера питания")
     @MainActor
     func dependencyInjectionAndBatteryProtection() async {
         let mockAssertion = MockSleepAssertion()
         let mockBattery = MockBattery(mockInfo: BatteryInfo(percentage: 80, isCharging: false, isPluggedIn: false))
         let mockLaunch = MockLaunchAtLogin()
+        let mockTrigger = MockSmartTrigger()
+        let mockNotif = MockNotificationService()
+        let mockQuickClick = MockQuickClickMonitor()
 
         let state = DoppioState(
             assertionService: mockAssertion,
             batteryMonitor: mockBattery,
-            launchAtLoginService: mockLaunch
+            launchAtLoginService: mockLaunch,
+            notificationService: mockNotif,
+            smartTriggerService: mockTrigger,
+            quickClickMonitor: mockQuickClick,
+            defaults: makeTestDefaults()
         )
 
         state.batteryThreshold = 20
         state.batteryProtectionEnabled = true
+        state.activateOnACPower = true
+        state.deactivateOnBattery = true
 
-        // Активируем бодрствование при нормальном заряде
+        // Симулируем подключение адаптера питания через событийный коллбэк IOKit
+        mockBattery.mockInfo = BatteryInfo(percentage: 80, isCharging: true, isPluggedIn: true)
+        mockBattery.onChange?()
+
+        #expect(state.isActive)
+        #expect(state.activeTriggerSource == .acPower)
+
+        // Симулируем отключение адаптера питания
+        mockBattery.mockInfo = BatteryInfo(percentage: 80, isCharging: false, isPluggedIn: false)
+        mockBattery.onChange?()
+
+        #expect(!state.isActive)
+        #expect(state.lastDeactivationReason == .powerDisconnected)
+
+        // Активируем вручную и симулируем разряд батареи ниже порога
         state.activate(preset: .indefinite)
         #expect(state.isActive)
 
-        // Симулируем падение заряда аккумулятора ниже порога
         mockBattery.mockInfo = BatteryInfo(percentage: 15, isCharging: false, isPluggedIn: false)
-        state.refreshBatteryInfo()
+        mockBattery.onChange?()
 
         #expect(!state.isActive)
         #expect(state.lastDeactivationReason == .batteryLow(percentage: 15))
@@ -266,6 +348,53 @@ struct DoppioTests {
         #expect(!state.isLaunchAtLogin)
         state.toggleLaunchAtLogin()
         #expect(state.isLaunchAtLogin)
+    }
+
+    @Test("Проверка протокольных коллбэков уведомлений и умных триггеров без downcasting")
+    @MainActor
+    func notificationAndSmartTriggerProtocolCallbacks() {
+        let mockAssertion = MockSleepAssertion()
+        let mockBattery = MockBattery(mockInfo: nil)
+        let mockLaunch = MockLaunchAtLogin()
+        let mockTrigger = MockSmartTrigger()
+        let mockNotif = MockNotificationService()
+        let mockQuickClick = MockQuickClickMonitor()
+
+        let state = DoppioState(
+            assertionService: mockAssertion,
+            batteryMonitor: mockBattery,
+            launchAtLoginService: mockLaunch,
+            notificationService: mockNotif,
+            smartTriggerService: mockTrigger,
+            quickClickMonitor: mockQuickClick,
+            defaults: makeTestDefaults()
+        )
+
+        // Тестируем быстрый клик через мок
+        mockQuickClick.onQuickToggle?()
+        #expect(state.isActive)
+        mockQuickClick.onQuickToggle?()
+        #expect(!state.isActive)
+
+        // Тестируем активацию и деактивацию через внешний монитор
+        state.activateOnExternalDisplay = true
+        mockTrigger.externalDisplayConnected = true
+        mockTrigger.onRequestActivation?(.externalDisplay)
+        #expect(state.isActive)
+        #expect(state.activeTriggerSource == .externalDisplay)
+
+        mockTrigger.externalDisplayConnected = false
+        mockTrigger.onRequestDeactivation?(.externalDisplayDisconnected)
+        #expect(!state.isActive)
+        #expect(state.lastDeactivationReason == .externalDisplayDisconnected)
+
+        // Тестируем коллбэк от уведомления (перевод в бессрочный режим)
+        state.activate(preset: .minutes15)
+        #expect(state.remainingSeconds != nil)
+        mockNotif.onActionReceived?(.makeIndefinite)
+        #expect(state.isActive)
+        #expect(state.selectedPreset == .indefinite)
+        #expect(state.remainingSeconds == nil)
     }
 
     @Test("Проверка поведения на настольном Mac (без аккумулятора)")
@@ -278,7 +407,8 @@ struct DoppioTests {
         let state = DoppioState(
             assertionService: mockAssertion,
             batteryMonitor: mockBattery,
-            launchAtLoginService: mockLaunch
+            launchAtLoginService: mockLaunch,
+            defaults: makeTestDefaults()
         )
 
         #expect(state.batteryInfo == nil)
@@ -293,8 +423,7 @@ struct DoppioTests {
     @Test("Проверка режимов строки меню (MenuBarDisplayStyle) и бейджа")
     @MainActor
     func menuBarDisplayStylesAndBadge() {
-        let testDefaults = UserDefaults(suiteName: "test-styles-\(UUID().uuidString)")!
-        let state = DoppioState(defaults: testDefaults)
+        let state = DoppioState(defaults: makeTestDefaults())
         state.activate(preset: .minutes30)
         #expect(state.isActive)
 
@@ -316,14 +445,14 @@ struct DoppioTests {
     @Test("Проверка управления целевыми приложениями (App Triggers)")
     @MainActor
     func smartTriggersAppManagement() {
-        let state = DoppioState()
+        let state = DoppioState(defaults: makeTestDefaults())
         let app1 = TriggerApp(bundleIdentifier: "com.apple.dt.Xcode", displayName: "Xcode")
         let app2 = TriggerApp(bundleIdentifier: "com.apple.FinalCut", displayName: "Final Cut Pro")
 
         state.addTargetApp(app1)
         state.addTargetApp(app2)
 
-        #expect(state.targetApps.count >= 2)
+        #expect(state.targetApps.count == 2)
         #expect(state.targetApps.contains(where: { $0.bundleIdentifier == "com.apple.dt.Xcode" }))
 
         // Проверка активации по триггеру приложения
@@ -343,7 +472,7 @@ struct DoppioTests {
     @Test("Проверка продления сессии и причин деактивации триггеров")
     @MainActor
     func sessionExtensionAndTriggerReasons() {
-        let state = DoppioState()
+        let state = DoppioState(defaults: makeTestDefaults())
         state.activate(preset: .minutes15)
         #expect(state.isActive)
 

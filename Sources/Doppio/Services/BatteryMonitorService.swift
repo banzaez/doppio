@@ -3,18 +3,63 @@ import IOKit.ps
 import os
 
 /// Протокол мониторинга питания и батареи
-public protocol BatteryMonitoring: Sendable {
+@MainActor
+public protocol BatteryMonitoring: AnyObject {
     func fetchBatteryInfo() -> BatteryInfo?
+    func startMonitoring(onChange: @escaping @MainActor () -> Void)
+    func stopMonitoring()
 }
 
-/// Сервис мониторинга состояния батареи и питания
+extension BatteryMonitoring {
+    public func startMonitoring(onChange: @escaping @MainActor () -> Void) {}
+    public func stopMonitoring() {}
+}
+
+/// Сервис событийного мониторинга состояния батареи и питания через IOKit (без поллинга)
+@MainActor
 public final class BatteryMonitorService: BatteryMonitoring {
     private let logger = Logger(subsystem: "com.doppio.app", category: "BatteryMonitor")
+    private var runLoopSource: CFRunLoopSource?
+    private var onChangeHandler: (@MainActor () -> Void)?
 
-    public init() {}
+    nonisolated public init() {}
+
+    isolated deinit {
+        stopMonitoring()
+    }
+
+    /// Запуск нативного событийного наблюдения IOKit за источниками питания (Zero Idle CPU)
+    public func startMonitoring(onChange: @escaping @MainActor () -> Void) {
+        stopMonitoring()
+        self.onChangeHandler = onChange
+
+        let context = Unmanaged.passUnretained(self).toOpaque()
+        let callback: IOPowerSourceCallbackType = { context in
+            guard let context else { return }
+            let service = Unmanaged<BatteryMonitorService>.fromOpaque(context).takeUnretainedValue()
+            Task { @MainActor in
+                service.onChangeHandler?()
+            }
+        }
+
+        if let source = IOPSNotificationCreateRunLoopSource(callback, context)?.takeRetainedValue() {
+            CFRunLoopAddSource(CFRunLoopGetMain(), source, .commonModes)
+            self.runLoopSource = source
+            logger.info("Событийный мониторинг питания IOKit запущен")
+        }
+    }
+
+    /// Остановка наблюдения за питанием
+    public func stopMonitoring() {
+        if let source = runLoopSource {
+            CFRunLoopRemoveSource(CFRunLoopGetMain(), source, .commonModes)
+            runLoopSource = nil
+        }
+        onChangeHandler = nil
+    }
 
     /// Получить актуальные данные о батарее
-    public func fetchBatteryInfo() -> BatteryInfo? {
+    nonisolated public func fetchBatteryInfo() -> BatteryInfo? {
         guard let snapshot = IOPSCopyPowerSourcesInfo()?.takeRetainedValue(),
               let sources = IOPSCopyPowerSourcesList(snapshot)?.takeRetainedValue() as? [CFTypeRef] else {
             return nil

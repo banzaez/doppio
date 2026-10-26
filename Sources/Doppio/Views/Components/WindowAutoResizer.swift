@@ -12,7 +12,7 @@ struct PopoverContentHeightKey: PreferenceKey {
     }
 }
 
-/// Мост управления адаптивным размером окна поповера строки меню
+/// Мост управления адаптивным размером окна поповера строки меню (без скачков и выхода за границы экрана)
 @MainActor
 final class WindowAutoResizerBridge {
     static let shared = WindowAutoResizerBridge()
@@ -25,36 +25,54 @@ final class WindowAutoResizerBridge {
     func register(window: NSWindow) {
         self.currentWindow = window
         if lastTargetHeight > 80 {
-            applyResize(toHeight: lastTargetHeight)
+            applyResize(toHeight: lastTargetHeight, animated: false)
         }
     }
 
     func resizeWindow(toHeight targetHeight: CGFloat) {
-        self.lastTargetHeight = targetHeight
-        applyResize(toHeight: targetHeight)
+        let roundedHeight = ceil(targetHeight)
+        guard abs(roundedHeight - lastTargetHeight) >= 1.0 else { return }
+        self.lastTargetHeight = roundedHeight
+        applyResize(toHeight: roundedHeight, animated: true)
     }
 
-    private func applyResize(toHeight targetHeight: CGFloat) {
-        guard let window = currentWindow, targetHeight > 80 else { return }
+    func closeWindow() {
+        if let window = currentWindow {
+            window.orderOut(nil)
+        } else {
+            for window in NSApplication.shared.windows where window.level == .popUpMenu || window.level == .statusBar {
+                window.orderOut(nil)
+            }
+        }
+    }
+
+    private func applyResize(toHeight rawHeight: CGFloat, animated: Bool) {
+        guard let window = currentWindow, rawHeight > 80 else { return }
+
+        let maxAllowedHeight = (window.screen ?? NSScreen.main).map { $0.visibleFrame.height - 24 } ?? 720
+        let targetHeight = min(rawHeight, maxAllowedHeight)
 
         let currentFrame = window.frame
         let heightDifference = targetHeight - currentFrame.height
 
-        // Выполняем анимацию изменения размера, если разница ощутима (> 1pt)
-        if abs(heightDifference) > 1.0 {
-            var newFrame = currentFrame
-            // В macOS y = 0 находится внизу экрана.
-            // Чтобы верхняя кромка окна оставалась зафиксирована прямо под статус-баром,
-            // корректируем origin.y на разницу высоты:
-            newFrame.origin.y -= heightDifference
-            newFrame.size.height = targetHeight
-            newFrame.size.width = max(currentFrame.width, 320)
+        guard abs(heightDifference) >= 1.0 else { return }
 
+        var newFrame = currentFrame
+        // В macOS y = 0 находится внизу экрана.
+        // Чтобы верхняя кромка окна оставалась строго зафиксирована под статус-баром,
+        // смещаем origin.y ровно на разницу высоты:
+        newFrame.origin.y -= heightDifference
+        newFrame.size.height = targetHeight
+        newFrame.size.width = 320
+
+        if animated && window.isVisible {
             NSAnimationContext.runAnimationGroup { context in
-                context.duration = 0.22
+                context.duration = 0.18
                 context.timingFunction = CAMediaTimingFunction(name: .easeInEaseOut)
                 window.animator().setFrame(newFrame, display: true)
             }
+        } else {
+            window.setFrame(newFrame, display: true)
         }
     }
 }
@@ -80,8 +98,8 @@ final class ResizerNSView: NSView {
         guard let window = self.window else { return }
         WindowAutoResizerBridge.shared.register(window: window)
         // Предотвращаем автоматический захват фокуса текстовым полем при открытии поповера
-        DispatchQueue.main.async {
-            window.makeFirstResponder(nil)
+        Task { @MainActor [weak window] in
+            window?.makeFirstResponder(nil)
         }
     }
 }

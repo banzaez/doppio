@@ -11,6 +11,8 @@ public enum NotificationPreExpiryAction: Sendable {
 /// Протокол службы системных уведомлений
 @MainActor
 public protocol AppNotificationManaging: AnyObject {
+    var onActionReceived: (@MainActor (NotificationPreExpiryAction) -> Void)? { get set }
+    @discardableResult
     func requestAuthorization() async -> Bool
     func schedulePreExpiryNotification(title: String, body: String, l10n: L10n) async
     func cancelPendingNotifications() async

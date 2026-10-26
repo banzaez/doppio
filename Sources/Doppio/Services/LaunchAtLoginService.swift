@@ -3,13 +3,15 @@ import ServiceManagement
 import os
 
 /// Протокол сервиса автозапуска
-public protocol LaunchAtLoginManaging: Sendable {
+@MainActor
+public protocol LaunchAtLoginManaging: AnyObject {
     var isEnabled: Bool { get }
     @discardableResult
     func setEnabled(_ enabled: Bool) -> Bool
 }
 
 /// Сервис автозапуска при входе в систему (SMAppService)
+@MainActor
 public final class LaunchAtLoginService: LaunchAtLoginManaging {
     private let logger = Logger(subsystem: "com.doppio.app", category: "LaunchAtLogin")
 

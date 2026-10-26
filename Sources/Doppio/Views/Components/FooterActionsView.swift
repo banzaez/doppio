@@ -1,5 +1,4 @@
 import SwiftUI
-import AppKit
 
 /// Нижняя строка навигации основного экрана Doppio со стеклянными кнопками macOS 27 / iOS 2026
 struct FooterActionsView: View {
@@ -15,64 +14,55 @@ struct FooterActionsView: View {
                         .font(.system(size: 11))
                     Text(state.l10n.settingsTitle)
                         .font(.system(size: 11, weight: .medium))
+                        .lineLimit(1)
                 }
                 .foregroundStyle(Color.secondary)
                 .padding(.horizontal, 9)
-                .padding(.vertical, 5)
+                .frame(height: 24)
             }
             .buttonStyle(GlassButtonStyle(cornerRadius: 8))
 
-            Spacer()
+            Spacer(minLength: 4)
 
             // Индикатор питания в стеклянной капсуле
             if let info = state.batteryInfo {
                 HStack(spacing: 4) {
                     Image(systemName: info.iconName)
                         .font(.system(size: 10))
-                        .foregroundStyle(batteryColor(for: info))
+                        .foregroundStyle(info.statusColor(threshold: state.batteryThreshold))
 
                     Text("\(info.percentage)%")
                         .font(.system(size: 10, weight: .semibold, design: .rounded))
+                        .monospacedDigit()
                         .foregroundStyle(Color.secondary)
                 }
                 .padding(.horizontal, 8)
-                .padding(.vertical, 4)
+                .frame(height: 22)
                 .glassCapsule(isAccent: info.percentage <= state.batteryThreshold)
                 .help(info.description(using: state.l10n))
             }
 
-            Spacer()
+            Spacer(minLength: 4)
 
-            // Кнопка закрытия приложения с явной надписью «Закрыть»
+            // Кнопка завершения работы приложения
             Button {
-                state.deactivate(reason: .quitApp)
-                NSApplication.shared.terminate(nil)
+                state.quitApplication()
             } label: {
                 HStack(spacing: 4) {
-                    Image(systemName: "xmark.circle")
-                        .font(.system(size: 10))
+                    Image(systemName: "power")
+                        .font(.system(size: 10, weight: .medium))
                     Text(state.l10n.closeButton)
                         .font(.system(size: 11, weight: .medium))
+                        .lineLimit(1)
                 }
                 .foregroundStyle(Color.secondary)
                 .padding(.horizontal, 9)
-                .padding(.vertical, 5)
+                .frame(height: 24)
             }
             .buttonStyle(GlassButtonStyle(cornerRadius: 8))
+            .help(state.l10n.quitButton)
         }
         .padding(.horizontal, 2)
-    }
-
-    private func batteryColor(for info: BatteryInfo) -> Color {
-        if info.isCharging {
-            return .green
-        }
-        if info.percentage <= state.batteryThreshold {
-            return .red
-        }
-        if info.percentage <= 40 {
-            return .orange
-        }
-        return .secondary
+        .frame(height: 26)
     }
 }

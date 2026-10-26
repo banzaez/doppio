@@ -9,13 +9,4 @@ public enum MenuBarDisplayStyle: String, CaseIterable, Identifiable, Sendable, C
     case iconOnly
 
     public var id: String { rawValue }
-
-    public func title(using l10n: L10n) -> String {
-        switch self {
-        case .standard:
-            return l10n.menuBarStyleStandard
-        case .iconOnly:
-            return l10n.menuBarStyleIconOnly
-        }
-    }
 }

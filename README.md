@@ -20,7 +20,7 @@
 - ⏱ **Удобные пресеты времени**:
   - `∞` Бессрочно
   - `15м`, `30м`, `1ч`, `2ч`, `4ч`
-  - 🎛 **Свой таймер**: плавный слайдер выбора точного времени (от 5 до 240 минут).
+  - 🎛 **Свой таймер**: капсульный степпер с кнопками `-` / `+` и прямым вводом минут с клавиатуры (от 1 до 720 минут).
 - 🔔 **Интерактивные уведомления перед засыпанием**:
   - Системное оповещение за 1 минуту до завершения таймера через `UserNotifications`.
   - Кнопки быстрых действий прямо в баннере: **«+15 мин»** и **«∞ Бессрочно»**.
@@ -97,28 +97,40 @@ doppio/
 ├── Sources/
 │   └── Doppio/
 │       ├── DoppioApp.swift   # Точка входа SwiftUI @main
+│       ├── Localization/
+│       │   ├── AppLanguage.swift           # Поддерживаемые языки и автоопределение
+│       │   └── L10n.swift                  # Мультиязычный словарь с плюрализацией
 │       ├── Models/
-│       │   ├── KeepAwakePreset.swift    # Пресеты длительности
-│       │   ├── SleepAssertionType.swift # Режимы (экран+система / система)
-│       │   └── BatteryInfo.swift        # Модель состояния питания
+│       │   ├── KeepAwakePreset.swift       # Пресеты длительности
+│       │   ├── SleepAssertionType.swift    # Режимы (экран+система / система)
+│       │   ├── BatteryInfo.swift           # Модель состояния питания
+│       │   ├── DeactivationReason.swift    # Причины остановки сессии
+│       │   ├── MenuBarDisplayStyle.swift   # Стили отображения в строке меню
+│       │   ├── SessionTriggerSource.swift  # Источники запуска (ручной / триггеры)
+│       │   └── TriggerApp.swift            # Модель целевого приложения
 │       ├── Services/
-│       │   ├── SleepAssertionService.swift # Swift Actor над IOKit
-│       │   ├── BatteryMonitorService.swift # IOKit Power Sources
-│       │   ├── LaunchAtLoginService.swift  # SMAppService автозапуск
-│       │   └── NotificationSoundService.swift
+│       │   ├── SleepAssertionService.swift # Swift Actor над IOKit Power Assertions
+│       │   ├── BatteryMonitorService.swift # Событийный IOKit мониторинг питания
+│       │   ├── SmartTriggerService.swift   # Structured Concurrency триггеры системы
+│       │   ├── AppNotificationService.swift# Уведомления UserNotifications с действиями
+│       │   ├── QuickClickMonitor.swift     # Перехват ⌥-клика и правого клика
+│       │   └── LaunchAtLoginService.swift  # SMAppService автозапуск
 │       ├── State/
-│       │   └── DoppioState.swift           # @Observable MainActor ViewModel
+│       │   ├── DoppioState.swift           # @Observable @MainActor координатор состояния
+│       │   └── DoppioSettingsStore.swift   # Изолированное хранилище настроек (UserDefaults)
 │       └── Views/
 │           ├── MenuBarLabelView.swift      # Иконка и бейдж в строке меню
 │           ├── DoppioPopoverView.swift     # Главный плавающий интерфейс
+│           ├── SettingsView.swift          # Компактный экран настроек
 │           └── Components/
-│               ├── QuickToggleCard.swift   # Карточка быстрого включения
-│               ├── PresetSelectionView.swift # Чипы пресетов и слайдер
-│               ├── SleepModeSelectorView.swift # Переключатель режимов
-│               ├── CircularProgressTimerView.swift # Кольцевой прогресс
-│               ├── BatteryStatusBadge.swift # Индикатор батареи
-│               ├── QuickSettingsPanel.swift # Разворачиваемые параметры
-│               └── FooterActionsView.swift  # Выход и настройки
+│               ├── ControlCenterHeroCard.swift    # Карточка Control Center с полосой прогресса
+│               ├── PresetSelectionView.swift      # Сетка пресетов и ввод своего времени
+│               ├── SleepModeSelectorView.swift    # Переключатель режимов с перетеканием
+│               ├── FooterActionsView.swift        # Нижняя панель навигации и индикатор заряда
+│               ├── GlassStyles.swift              # Модификаторы и стили Liquid Glass 2026
+│               ├── ModelPresentation.swift        # Презентационные расширения доменных моделей
+│               ├── WindowAutoResizer.swift        # Адаптивное управление высотой окна
+│               └── StatusItemFrameTrackerView.swift # Отслеживание координат иконки статус-бара
 └── Tests/
     └── DoppioTests/
         └── DoppioTests.swift # Тесты Swift Testing

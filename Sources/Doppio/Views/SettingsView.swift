@@ -2,20 +2,20 @@ import SwiftUI
 import AppKit
 import UniformTypeIdentifiers
 
-/// Экран настроек Doppio в стеклянном стиле macOS 2026 Liquid Glass
+/// Экран настроек Doppio в стеклянном стиле macOS 2026 Liquid Glass (компактная адаптивная вёрстка)
 struct SettingsView: View {
     @Bindable var state: DoppioState
     let onBack: () -> Void
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            // Заголовок с кнопкой Назад
+        VStack(alignment: .leading, spacing: 6) {
+            // Заголовок с идеально центрированным названием и кнопкой Назад
             headerView
 
             // Блок 1: Основные параметры (Язык интерфейса и Запуск при входе)
             generalSection
 
-            // Блок 2: Строка меню (Компактный режим для MacBook Notch & Быстрый клик)
+            // Блок 2: Строка меню (Компактный режим для MacBook Notch, Быстрый клик, Уведомления)
             menuBarSection
 
             // Блок 3: Умные триггеры автоматизации (App Triggers, AC Power, Display)
@@ -24,59 +24,57 @@ struct SettingsView: View {
             // Блок 4: Защита аккумулятора
             batterySection
 
-            // Блок 5: Выход из приложения
-            quitSection
-
-            // Подвал
-            footerView
+            // Блок 5: Выход из приложения и версия
+            bottomFooterSection
         }
     }
 
     // MARK: - Секции интерфейса
 
     private var headerView: some View {
-        HStack {
-            Button(action: onBack) {
-                HStack(spacing: 4) {
-                    Image(systemName: "chevron.left")
-                        .font(.system(size: 11, weight: .bold))
-                    Text(state.l10n.backButton)
-                        .font(.system(size: 11, weight: .medium))
-                }
-                .foregroundStyle(Color.orange)
-                .padding(.horizontal, 8)
-                .padding(.vertical, 4)
-            }
-            .buttonStyle(GlassButtonStyle(cornerRadius: 8))
-
-            Spacer()
-
+        ZStack {
             Text(state.l10n.settingsTitle)
                 .font(.system(size: 13, weight: .semibold))
                 .foregroundStyle(Color.primary)
+                .lineLimit(1)
 
-            Spacer()
+            HStack {
+                Button(action: onBack) {
+                    HStack(spacing: 4) {
+                        Image(systemName: "chevron.left")
+                            .font(.system(size: 10, weight: .bold))
+                        Text(state.l10n.backButton)
+                            .font(.system(size: 11, weight: .medium))
+                            .lineLimit(1)
+                    }
+                    .foregroundStyle(Color.orange)
+                    .padding(.horizontal, 8)
+                    .frame(height: 22)
+                }
+                .buttonStyle(GlassButtonStyle(cornerRadius: 7))
 
-            Color.clear
-                .frame(width: 58, height: 24)
+                Spacer()
+            }
         }
-        .padding(.bottom, 2)
+        .frame(height: 24)
     }
 
     private var generalSection: some View {
-        VStack(spacing: 8) {
+        VStack(spacing: 5) {
             // Язык интерфейса
             HStack(spacing: 8) {
                 Image(systemName: "globe")
-                    .font(.system(size: 12))
+                    .font(.system(size: 11.5))
                     .foregroundStyle(Color.secondary)
-                    .frame(width: 16)
+                    .frame(width: 15)
 
                 Text(state.l10n.settingsLanguage)
                     .font(.system(size: 11))
                     .foregroundStyle(Color.primary)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.85)
 
-                Spacer()
+                Spacer(minLength: 4)
 
                 Menu {
                     ForEach(AppLanguage.allCases) { lang in
@@ -93,13 +91,14 @@ struct SettingsView: View {
                     }
                 } label: {
                     Text(state.language.displayName)
-                        .font(.system(size: 11, weight: .medium))
-                        .padding(.horizontal, 9)
-                        .padding(.vertical, 4)
+                        .font(.system(size: 10.5, weight: .medium))
+                        .padding(.horizontal, 8)
+                        .frame(height: 20)
                 }
                 .menuStyle(.borderlessButton)
-                .buttonStyle(GlassButtonStyle(cornerRadius: 7))
+                .buttonStyle(GlassButtonStyle(cornerRadius: 6))
             }
+            .frame(height: 20)
 
             Divider()
                 .padding(.horizontal, 2)
@@ -114,69 +113,61 @@ struct SettingsView: View {
                 )
             )
         }
-        .padding(10)
-        .glassCard(cornerRadius: 13)
+        .padding(.horizontal, 9)
+        .padding(.vertical, 7)
+        .glassCard(cornerRadius: 11)
     }
 
     private var menuBarSection: some View {
-        VStack(alignment: .leading, spacing: 8) {
+        VStack(alignment: .leading, spacing: 5) {
+            // Заголовок и переключатель стилей в компактном блоке
             HStack(spacing: 6) {
                 Image(systemName: "menubar.rectangle")
                     .font(.system(size: 11, weight: .semibold))
                     .foregroundStyle(Color.orange)
+                    .frame(width: 15)
                 Text(state.l10n.menuBarStyleTitle)
                     .font(.system(size: 11, weight: .semibold))
                     .foregroundStyle(Color.primary)
+                    .lineLimit(1)
             }
+            .help(state.l10n.menuBarStyleDesc)
 
             // Переключатель стилей (Стандартный | Только иконка)
             HStack(spacing: 5) {
                 ForEach(MenuBarDisplayStyle.allCases) { style in
                     let isSelected = state.menuBarDisplayStyle == style
                     Button {
-                        withAnimation(.spring(response: 0.2, dampingFraction: 0.8)) {
+                        withAnimation(.easeInOut(duration: 0.16)) {
                             state.menuBarDisplayStyle = style
                         }
                     } label: {
                         HStack(spacing: 5) {
-                            switch style {
-                            case .standard:
-                                Image(systemName: "cup.and.saucer.fill")
-                                    .font(.system(size: 9.5))
-                            case .iconOnly:
-                                Image(systemName: "cup.and.saucer")
-                                    .font(.system(size: 9.5))
-                            }
+                            Image(systemName: style.iconName)
+                                .font(.system(size: 9.5))
                             Text(style.title(using: state.l10n))
                                 .font(.system(size: 10, weight: isSelected ? .bold : .medium))
+                                .lineLimit(1)
+                                .minimumScaleFactor(0.85)
                         }
                         .frame(maxWidth: .infinity)
-                        .padding(.vertical, 5)
+                        .frame(height: 22)
                     }
-                    .buttonStyle(GlassButtonStyle(isSelected: isSelected, isAccent: true, cornerRadius: 7))
+                    .buttonStyle(GlassButtonStyle(isSelected: isSelected, isAccent: true, cornerRadius: 6))
                 }
             }
-
-            Text(state.l10n.menuBarStyleDesc)
-                .font(.system(size: 9.5))
-                .foregroundStyle(Color.secondary)
-                .padding(.bottom, 2)
+            .help(state.l10n.menuBarStyleDesc)
 
             Divider()
                 .padding(.horizontal, 2)
 
             // Быстрый клик (Option / Right Click)
-            VStack(alignment: .leading, spacing: 3) {
-                settingToggleRow(
-                    title: state.l10n.settingsQuickToggle,
-                    icon: "hand.tap",
-                    isOn: $state.quickToggleEnabled
-                )
-                Text(state.l10n.settingsQuickToggleDesc)
-                    .font(.system(size: 9.5))
-                    .foregroundStyle(Color.secondary)
-                    .padding(.leading, 24)
-            }
+            settingToggleRow(
+                title: state.l10n.settingsQuickToggle,
+                icon: "hand.tap",
+                isOn: $state.quickToggleEnabled,
+                helpText: state.l10n.settingsQuickToggleDesc
+            )
 
             Divider()
                 .padding(.horizontal, 2)
@@ -188,110 +179,59 @@ struct SettingsView: View {
                 isOn: $state.notifyBeforeExpiry
             )
         }
-        .padding(10)
-        .glassCard(cornerRadius: 13)
+        .padding(.horizontal, 9)
+        .padding(.vertical, 7)
+        .glassCard(cornerRadius: 11)
     }
 
     private var smartTriggersSection: some View {
-        VStack(alignment: .leading, spacing: 8) {
+        VStack(alignment: .leading, spacing: 5) {
             HStack(spacing: 6) {
                 Image(systemName: "bolt.badge.automatic")
                     .font(.system(size: 11, weight: .semibold))
                     .foregroundStyle(Color.orange)
+                    .frame(width: 15)
                 Text(state.l10n.settingsSmartTriggersSection)
-                    .font(.system(size: 11, weight: .semibold))
-                    .foregroundStyle(Color.primary)
+                    .font(.system(size: 10, weight: .semibold))
+                    .foregroundStyle(Color.secondary)
+                    .lineLimit(1)
+
+                Spacer()
+
+                // Кнопка добавления приложений прямо в шапке секции, когда триггеры включены
+                if state.appTriggersEnabled {
+                    addAppMenuButton
+                }
             }
 
             // Тумблер триггеров приложений
             settingToggleRow(
                 title: state.l10n.settingsAppTriggers,
                 icon: "app.dashed",
-                isOn: $state.appTriggersEnabled
+                isOn: $state.appTriggersEnabled,
+                helpText: state.l10n.settingsAppTriggersDesc
             )
 
             if state.appTriggersEnabled {
-                VStack(alignment: .leading, spacing: 6) {
-                    Text(state.l10n.settingsAppTriggersDesc)
-                        .font(.system(size: 9.5))
-                        .foregroundStyle(Color.secondary)
-
-                    // Список добавленных приложений
+                VStack(alignment: .leading, spacing: 4) {
                     if state.targetApps.isEmpty {
                         Text(state.l10n.settingsNoTargetApps)
-                            .font(.system(size: 10, weight: .regular))
-                            .foregroundStyle(Color.secondary.opacity(0.7))
-                            .padding(.vertical, 2)
+                            .font(.system(size: 9.5, weight: .regular))
+                            .foregroundStyle(Color.secondary.opacity(0.75))
+                            .padding(.leading, 23)
+                            .frame(height: 16)
+                    } else if state.targetApps.count <= 3 {
+                        targetAppsRows
+                            .padding(.leading, 23)
                     } else {
-                        VStack(spacing: 4) {
-                            ForEach(state.targetApps) { app in
-                                HStack(spacing: 6) {
-                                    Circle()
-                                        .fill(state.isTargetAppRunning(app) ? Color.green : Color.secondary.opacity(0.4))
-                                        .frame(width: 6, height: 6)
-
-                                    Text(app.displayName)
-                                        .font(.system(size: 10.5, weight: .medium))
-                                        .foregroundStyle(Color.primary)
-                                        .lineLimit(1)
-
-                                    Spacer()
-
-                                    Button {
-                                        withAnimation(.spring(response: 0.2, dampingFraction: 0.8)) {
-                                            state.removeTargetApp(id: app.id)
-                                        }
-                                    } label: {
-                                        Image(systemName: "xmark")
-                                            .font(.system(size: 8, weight: .bold))
-                                            .foregroundStyle(Color.secondary)
-                                            .padding(3)
-                                    }
-                                    .buttonStyle(.plain)
-                                }
-                                .padding(.horizontal, 7)
-                                .padding(.vertical, 3.5)
-                                .background(Color.primary.opacity(0.04))
-                                .cornerRadius(6)
-                            }
+                        // Явная высота (height: 74) гарантирует, что ScrollView не растянется внутри .fixedSize(vertical: true)
+                        ScrollView(.vertical, showsIndicators: true) {
+                            targetAppsRows
                         }
+                        .frame(height: 74)
+                        .padding(.leading, 23)
                     }
-
-                    // Кнопка добавления приложений
-                    Menu {
-                        let candidates = candidateRunningApps
-                        if !candidates.isEmpty {
-                            Section(state.l10n.settingsRunningAppsSection) {
-                                ForEach(candidates) { app in
-                                    Button {
-                                        state.addTargetApp(app)
-                                    } label: {
-                                        Text(app.displayName)
-                                    }
-                                }
-                            }
-                        }
-
-                        Button {
-                            selectAppFromDisk()
-                        } label: {
-                            Label(state.l10n.settingsChooseFromDisk, systemImage: "folder")
-                        }
-                    } label: {
-                        HStack(spacing: 4) {
-                            Image(systemName: "plus.circle.fill")
-                                .font(.system(size: 10))
-                            Text(state.l10n.settingsAddAppButton)
-                                .font(.system(size: 10, weight: .medium))
-                        }
-                        .foregroundStyle(Color.orange)
-                        .padding(.horizontal, 8)
-                        .padding(.vertical, 4)
-                    }
-                    .menuStyle(.borderlessButton)
-                    .buttonStyle(GlassButtonStyle(cornerRadius: 6))
                 }
-                .padding(.leading, 24)
             }
 
             Divider()
@@ -322,144 +262,213 @@ struct SettingsView: View {
                 isOn: $state.activateOnExternalDisplay
             )
         }
-        .padding(10)
-        .glassCard(cornerRadius: 13)
+        .padding(.horizontal, 9)
+        .padding(.vertical, 7)
+        .glassCard(cornerRadius: 11)
     }
 
+    private var addAppMenuButton: some View {
+        Menu {
+            let candidates = state.candidateRunningApps()
+            if !candidates.isEmpty {
+                Section(state.l10n.settingsRunningAppsSection) {
+                    ForEach(candidates) { app in
+                        Button {
+                            withAnimation(.easeInOut(duration: 0.16)) {
+                                state.addTargetApp(app)
+                            }
+                        } label: {
+                            Text(app.displayName)
+                        }
+                    }
+                }
+            }
+
+            Button {
+                selectAppFromDisk()
+            } label: {
+                Label(state.l10n.settingsChooseFromDisk, systemImage: "folder")
+            }
+        } label: {
+            HStack(spacing: 3) {
+                Image(systemName: "plus.circle.fill")
+                    .font(.system(size: 9.5))
+                Text(state.l10n.settingsAddAppButton)
+                    .font(.system(size: 9.5, weight: .medium))
+                    .lineLimit(1)
+            }
+            .foregroundStyle(Color.orange)
+            .padding(.horizontal, 7)
+            .frame(height: 19)
+        }
+        .menuStyle(.borderlessButton)
+        .buttonStyle(GlassButtonStyle(cornerRadius: 5))
+    }
+
+    private var targetAppsRows: some View {
+        VStack(spacing: 3) {
+            ForEach(state.targetApps) { app in
+                HStack(spacing: 6) {
+                    Image(nsImage: app.appIcon)
+                        .resizable()
+                        .interpolation(.high)
+                        .frame(width: 13, height: 13)
+
+                    Circle()
+                        .fill(state.isTargetAppRunning(app) ? Color.green : Color.secondary.opacity(0.35))
+                        .frame(width: 5, height: 5)
+
+                    Text(app.displayName)
+                        .font(.system(size: 10, weight: .medium))
+                        .foregroundStyle(Color.primary)
+                        .lineLimit(1)
+
+                    Spacer(minLength: 4)
+
+                    Button {
+                        withAnimation(.easeInOut(duration: 0.16)) {
+                            state.removeTargetApp(id: app.id)
+                        }
+                    } label: {
+                        Image(systemName: "xmark")
+                            .font(.system(size: 7.5, weight: .bold))
+                            .foregroundStyle(Color.secondary)
+                            .frame(width: 15, height: 15)
+                            .contentShape(Rectangle())
+                    }
+                    .buttonStyle(.plain)
+                }
+                .padding(.horizontal, 6)
+                .frame(height: 22)
+                .background(
+                    RoundedRectangle(cornerRadius: 5, style: .continuous)
+                        .fill(Color.primary.opacity(0.045))
+                )
+            }
+        }
+    }
 
     private var batterySection: some View {
         Group {
             if state.batteryInfo != nil {
-                VStack(alignment: .leading, spacing: 8) {
+                VStack(alignment: .leading, spacing: 5) {
                     settingToggleRow(
                         title: state.l10n.settingsBatteryProtection,
                         icon: "bolt.shield",
-                        isOn: $state.batteryProtectionEnabled
+                        isOn: $state.batteryProtectionEnabled,
+                        helpText: state.l10n.settingsBatteryThresholdDesc
                     )
 
                     if state.batteryProtectionEnabled {
-                        Divider()
-                            .padding(.horizontal, 4)
+                        HStack(spacing: 4) {
+                            ForEach([10, 15, 20, 25, 30], id: \.self) { pct in
+                                let isSelected = state.batteryThreshold == pct
 
-                        VStack(alignment: .leading, spacing: 6) {
-                            Text(state.l10n.settingsBatteryThresholdDesc)
-                                .font(.system(size: 10))
-                                .foregroundStyle(Color.secondary)
-
-                            HStack(spacing: 6) {
-                                ForEach([10, 15, 20, 25, 30], id: \.self) { pct in
-                                    let isSelected = state.batteryThreshold == pct
-
-                                    Button {
-                                        withAnimation(.spring(response: 0.2, dampingFraction: 0.75)) {
-                                            state.batteryThreshold = pct
-                                        }
-                                    } label: {
-                                        Text("\(pct)%")
-                                            .font(.system(size: 10, weight: isSelected ? .bold : .medium, design: .rounded))
-                                            .foregroundStyle(isSelected ? Color.orange : Color.secondary)
-                                            .frame(maxWidth: .infinity)
-                                            .padding(.vertical, 4)
+                                Button {
+                                    withAnimation(.easeInOut(duration: 0.16)) {
+                                        state.batteryThreshold = pct
                                     }
-                                    .buttonStyle(GlassButtonStyle(
-                                        isSelected: isSelected,
-                                        isAccent: true,
-                                        cornerRadius: 6
-                                    ))
+                                } label: {
+                                    Text("\(pct)%")
+                                        .font(.system(size: 9.5, weight: isSelected ? .bold : .medium, design: .rounded))
+                                        .foregroundStyle(isSelected ? Color.orange : Color.secondary)
+                                        .frame(maxWidth: .infinity)
+                                        .frame(height: 20)
                                 }
+                                .buttonStyle(GlassButtonStyle(
+                                    isSelected: isSelected,
+                                    isAccent: true,
+                                    cornerRadius: 5
+                                ))
                             }
                         }
-                        .padding(.top, 2)
+                        .padding(.top, 1)
                     }
                 }
-                .padding(10)
-                .glassCard(cornerRadius: 13)
+                .padding(.horizontal, 9)
+                .padding(.vertical, 7)
+                .glassCard(cornerRadius: 11)
             } else {
                 HStack(spacing: 8) {
                     Image(systemName: "desktopcomputer")
-                        .font(.system(size: 12))
+                        .font(.system(size: 11.5))
                         .foregroundStyle(Color.secondary)
-                        .frame(width: 16)
+                        .frame(width: 15)
 
                     Text(state.l10n.desktopMacNoBattery)
-                        .font(.system(size: 11))
+                        .font(.system(size: 10.5))
                         .foregroundStyle(Color.secondary)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.85)
 
                     Spacer()
                 }
-                .padding(10)
-                .glassCard(cornerRadius: 13)
+                .padding(.horizontal, 9)
+                .padding(.vertical, 7)
+                .glassCard(cornerRadius: 11)
             }
         }
     }
 
-    private var quitSection: some View {
-        Button {
-            state.deactivate(reason: .quitApp)
-            NSApplication.shared.terminate(nil)
-        } label: {
-            HStack(spacing: 5) {
-                Image(systemName: "power")
-                    .font(.system(size: 11, weight: .semibold))
-                Text(state.l10n.quitButton)
-                    .font(.system(size: 11, weight: .medium))
+    private var bottomFooterSection: some View {
+        let version = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.1.0"
+        return HStack(spacing: 10) {
+            Text("Doppio v\(version)")
+                .font(.system(size: 10, weight: .medium, design: .rounded))
+                .foregroundStyle(Color.secondary.opacity(0.65))
+                .padding(.leading, 4)
+
+            Spacer()
+
+            Button {
+                state.quitApplication()
+            } label: {
+                HStack(spacing: 5) {
+                    Image(systemName: "power")
+                        .font(.system(size: 10, weight: .semibold))
+                    Text(state.l10n.quitButton)
+                        .font(.system(size: 10.5, weight: .medium))
+                        .lineLimit(1)
+                }
+                .foregroundStyle(Color.red.opacity(0.88))
+                .padding(.horizontal, 10)
+                .frame(height: 24)
             }
-            .foregroundStyle(Color.red.opacity(0.85))
-            .frame(maxWidth: .infinity)
-            .padding(.vertical, 6)
+            .buttonStyle(GlassButtonStyle(cornerRadius: 7))
         }
-        .buttonStyle(GlassButtonStyle(cornerRadius: 10))
-        .padding(.top, 2)
+        .frame(height: 24)
     }
 
-    private var footerView: some View {
-        HStack {
-            Spacer()
-            Text("Doppio v1.1.0")
-                .font(.system(size: 10, weight: .regular, design: .rounded))
-                .foregroundStyle(Color.secondary.opacity(0.6))
-            Spacer()
-        }
-        .padding(.top, 2)
-    }
-
-    private func settingToggleRow(title: String, icon: String, isOn: Binding<Bool>) -> some View {
+    private func settingToggleRow(
+        title: String,
+        icon: String,
+        isOn: Binding<Bool>,
+        helpText: String? = nil
+    ) -> some View {
         HStack(spacing: 8) {
             Image(systemName: icon)
-                .font(.system(size: 12))
+                .font(.system(size: 11))
                 .foregroundStyle(Color.secondary)
-                .frame(width: 16)
+                .frame(width: 15)
 
             Text(title)
-                .font(.system(size: 11))
+                .font(.system(size: 10.5))
                 .foregroundStyle(Color.primary)
+                .lineLimit(1)
+                .minimumScaleFactor(0.85)
 
-            Spacer()
+            Spacer(minLength: 4)
 
             Toggle("", isOn: isOn)
                 .toggleStyle(.switch)
                 .controlSize(.mini)
                 .labelsHidden()
         }
+        .frame(height: 17)
+        .help(helpText ?? "")
     }
 
     // MARK: - Вспомогательные методы выбора приложений
-
-    private var candidateRunningApps: [TriggerApp] {
-        let existingIds = Set(state.targetApps.map(\.bundleIdentifier))
-        return NSWorkspace.shared.runningApplications
-            .filter { app in
-                app.activationPolicy == .regular &&
-                app.bundleIdentifier != nil &&
-                app.bundleIdentifier != Bundle.main.bundleIdentifier &&
-                !existingIds.contains(app.bundleIdentifier!)
-            }
-            .compactMap { app in
-                guard let bundleId = app.bundleIdentifier else { return nil }
-                let name = app.localizedName ?? bundleId
-                return TriggerApp(bundleIdentifier: bundleId, displayName: name)
-            }
-    }
 
     private func selectAppFromDisk() {
         let panel = NSOpenPanel()
@@ -470,12 +479,8 @@ struct SettingsView: View {
         panel.directoryURL = URL(fileURLWithPath: "/Applications")
 
         if panel.runModal() == .OK, let url = panel.url {
-            if let bundle = Bundle(url: url),
-               let bundleId = bundle.bundleIdentifier {
-                let name = bundle.infoDictionary?["CFBundleDisplayName"] as? String
-                    ?? bundle.infoDictionary?["CFBundleName"] as? String
-                    ?? url.deletingPathExtension().lastPathComponent
-                state.addTargetApp(TriggerApp(bundleIdentifier: bundleId, displayName: name))
+            withAnimation(.easeInOut(duration: 0.16)) {
+                state.addTargetApp(from: url)
             }
         }
     }

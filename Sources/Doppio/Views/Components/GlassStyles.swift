@@ -166,17 +166,13 @@ struct GlassButtonStyle: ButtonStyle {
                         .fill(
                             isSelected
                                 ? (isAccent
-                                   ? Color.orange.opacity(isHovered ? 0.28 : 0.22)
-                                   : Color.primary.opacity(isHovered ? 0.16 : 0.12))
+                                   ? Color.orange.opacity(isHovered ? 0.26 : 0.20)
+                                   : Color.primary.opacity(isHovered ? 0.15 : 0.11))
                                 : Color.primary.opacity(
                                     configuration.isPressed
-                                        ? 0.10
-                                        : (isHovered ? 0.08 : 0.04)
+                                        ? 0.11
+                                        : (isHovered ? 0.08 : 0.045)
                                 )
-                        )
-                        .background(
-                            RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
-                                .fill(.ultraThinMaterial)
                         )
                 )
                 .overlay(
@@ -185,7 +181,7 @@ struct GlassButtonStyle: ButtonStyle {
                         .fill(
                             LinearGradient(
                                 colors: [
-                                    Color.white.opacity(isHovered ? 0.12 : 0.06),
+                                    Color.white.opacity(isHovered ? 0.14 : 0.07),
                                     Color.clear
                                 ],
                                 startPoint: .top,

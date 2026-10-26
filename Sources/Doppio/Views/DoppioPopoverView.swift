@@ -19,14 +19,14 @@ struct DoppioPopoverView: View {
                     .transition(.opacity)
             case .settings:
                 SettingsView(state: state) {
-                    withAnimation(.spring(response: 0.25, dampingFraction: 0.8)) {
+                    withAnimation(.easeInOut(duration: 0.18)) {
                         currentScreen = .main
                     }
                 }
                 .transition(.opacity)
             }
         }
-        .padding(14)
+        .padding(13)
         .frame(width: 320)
         .background(
             GeometryReader { proxy in
@@ -37,20 +37,24 @@ struct DoppioPopoverView: View {
             }
         )
         .onPreferenceChange(PopoverContentHeightKey.self) { newHeight in
-            if newHeight > 50 {
+            if newHeight > 80 {
                 WindowAutoResizerBridge.shared.resizeWindow(toHeight: newHeight)
             }
         }
         .fixedSize(horizontal: false, vertical: true)
         .background(WindowAutoResizer())
         .onAppear {
+            state.isPopoverVisible = true
             state.refreshBatteryInfo()
+        }
+        .onDisappear {
+            state.isPopoverVisible = false
         }
     }
 
     @ViewBuilder
     private var mainScreenView: some View {
-        VStack(spacing: 11) {
+        VStack(spacing: 10) {
             // Верхний стеклянный блок Control Center с тумблером и интегрированной полосой прогресса
             ControlCenterHeroCard(state: state)
 
@@ -70,7 +74,7 @@ struct DoppioPopoverView: View {
 
             // Нижняя строка действий
             FooterActionsView(state: state) {
-                withAnimation(.spring(response: 0.25, dampingFraction: 0.8)) {
+                withAnimation(.easeInOut(duration: 0.18)) {
                     currentScreen = .settings
                 }
             }
@@ -79,7 +83,7 @@ struct DoppioPopoverView: View {
 
     private func deactivationBannerView(reason: String) -> some View {
         HStack(spacing: 6) {
-            Image(systemName: "info.circle")
+            Image(systemName: "info.circle.fill")
                 .font(.system(size: 11))
                 .foregroundStyle(Color.orange)
 
@@ -87,24 +91,26 @@ struct DoppioPopoverView: View {
                 .font(.system(size: 10, weight: .medium))
                 .foregroundStyle(Color.secondary)
                 .lineLimit(1)
+                .minimumScaleFactor(0.85)
 
-            Spacer()
+            Spacer(minLength: 4)
 
             Button {
-                withAnimation(.spring(response: 0.2, dampingFraction: 0.8)) {
+                withAnimation(.easeInOut(duration: 0.18)) {
                     state.clearDeactivationReason()
                 }
             } label: {
                 Image(systemName: "xmark")
                     .font(.system(size: 8, weight: .bold))
                     .foregroundStyle(Color.secondary)
-                    .padding(3)
+                    .frame(width: 16, height: 16)
+                    .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
         }
         .padding(.horizontal, 10)
-        .padding(.vertical, 6)
+        .frame(height: 28)
         .glassCard(cornerRadius: 9)
-        .transition(.opacity.combined(with: .scale(scale: 0.96)))
+        .transition(.opacity)
     }
 }

@@ -21,6 +21,7 @@ struct PresetSelectionView: View {
                 .font(.system(size: 10, weight: .semibold))
                 .foregroundStyle(Color.secondary)
                 .padding(.horizontal, 2)
+                .lineLimit(1)
 
             // Сетка из 6 основных пресетов в стиле жидкого стекла macOS 27 / iOS 2026
             LazyVGrid(columns: [
@@ -31,7 +32,7 @@ struct PresetSelectionView: View {
                 ForEach(standardPresets) { preset in
                     Button {
                         isMinutesFocused = false
-                        withAnimation(.spring(response: 0.25, dampingFraction: 0.75)) {
+                        withAnimation(.spring(response: 0.25, dampingFraction: 0.8)) {
                             state.selectedPreset = preset
                             state.activate(preset: preset)
                         }
@@ -40,9 +41,10 @@ struct PresetSelectionView: View {
                             .font(.system(size: 11, weight: state.selectedPreset == preset ? .semibold : .medium))
                             .foregroundStyle(state.selectedPreset == preset ? (state.isActive ? Color.orange : Color.primary) : Color.primary)
                             .frame(maxWidth: .infinity)
-                            .padding(.vertical, 7)
+                            .frame(height: 28)
                             .padding(.horizontal, 4)
                             .lineLimit(1)
+                            .minimumScaleFactor(0.85)
                     }
                     .buttonStyle(GlassButtonStyle(
                         isSelected: state.selectedPreset == preset,
@@ -58,7 +60,7 @@ struct PresetSelectionView: View {
         .onAppear {
             localMinutes = state.customMinutes
             isMinutesFocused = false
-            DispatchQueue.main.async {
+            Task { @MainActor in
                 isMinutesFocused = false
             }
         }
@@ -72,22 +74,25 @@ struct PresetSelectionView: View {
         let isSelected = state.selectedPreset == .custom
 
         return HStack(spacing: 6) {
-            // Кнопка выбора пресета «Свой»
+            // Кликабельная левая область выбора и запуска пресета «Свой таймер»
             Button {
                 isMinutesFocused = false
-                commitMinutes()
+                activateCustomPreset()
             } label: {
                 HStack(spacing: 5) {
                     Image(systemName: "timer")
                         .font(.system(size: 11))
                     Text(state.l10n.presetCustom)
                         .font(.system(size: 11, weight: isSelected ? .semibold : .regular))
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.85)
+                    Spacer(minLength: 4)
                 }
                 .foregroundStyle(isSelected ? (state.isActive ? Color.orange : Color.primary) : Color.secondary)
+                .frame(maxHeight: .infinity)
+                .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
-
-            Spacer()
 
             // Степпер и ввод с клавиатуры
             HStack(spacing: 5) {
@@ -116,17 +121,18 @@ struct PresetSelectionView: View {
                     .frame(width: 32)
                     .focused($isMinutesFocused)
                     .onSubmit {
-                        commitMinutes()
+                        activateCustomPreset()
                     }
                     .onChange(of: isMinutesFocused) { _, focused in
                         if !focused {
-                            commitMinutes()
+                            commitMinutesSilently()
                         }
                     }
 
                     Text(state.l10n.minuteSuffix)
                         .font(.system(size: 10, weight: .medium))
                         .foregroundStyle(isSelected ? Color.orange : Color.secondary)
+                        .lineLimit(1)
                 }
                 .padding(.horizontal, 5)
                 .padding(.vertical, 2)
@@ -148,34 +154,41 @@ struct PresetSelectionView: View {
             }
         }
         .padding(.horizontal, 10)
-        .padding(.vertical, 6)
         .frame(height: 34)
         .glassCard(cornerRadius: 9, isSelected: isSelected, isAccent: state.isActive)
     }
 
-    private func commitMinutes() {
+    private func commitMinutesSilently() {
+        let clamped = max(1, min(720, localMinutes))
+        localMinutes = clamped
+        state.customMinutes = clamped
+    }
+
+    private func activateCustomPreset() {
         isMinutesFocused = false
-        withAnimation(.spring(response: 0.25, dampingFraction: 0.75)) {
+        withAnimation(.spring(response: 0.25, dampingFraction: 0.8)) {
             let clamped = max(1, min(720, localMinutes))
             localMinutes = clamped
             state.customMinutes = clamped
-            state.selectedPreset = .custom
-            if state.isActive {
-                state.activate(preset: .custom)
-            }
+            state.activate(preset: .custom)
         }
     }
 
     private func adjustCustomMinutes(by delta: Int) {
         isMinutesFocused = false
-        withAnimation(.spring(response: 0.2, dampingFraction: 0.75)) {
-            let updated = max(5, min(720, state.customMinutes + delta))
-            localMinutes = updated
-            state.customMinutes = updated
-            state.selectedPreset = .custom
-            if state.isActive {
-                state.activate(preset: .custom)
+        withAnimation(.spring(response: 0.2, dampingFraction: 0.8)) {
+            let current = state.customMinutes
+            let next: Int
+            if delta < 0 && current <= 5 {
+                next = 1
+            } else if delta > 0 && current == 1 {
+                next = 5
+            } else {
+                next = max(1, min(720, current + delta))
             }
+            localMinutes = next
+            state.customMinutes = next
+            state.activate(preset: .custom)
         }
     }
 }

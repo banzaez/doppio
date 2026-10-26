@@ -3,40 +3,24 @@ import Observation
 import AppKit
 import os
 
-/// Главная модель состояния приложения Doppio
+/// Главная модель-координатор состояния приложения Doppio
 /// Построена на основе Observation framework (@Observable) и Swift Concurrency (@MainActor)
 @Observable
 @MainActor
 public final class DoppioState {
-    // MARK: - Ключи UserDefaults
-    private enum StorageKey: String {
-        case assertionType
-        case showTimerInMenuBar
-        case menuBarDisplayStyle
-        case quickToggleEnabled
-        case notifyBeforeExpiry
-        case batteryProtectionEnabled
-        case batteryThreshold
-        case customMinutes
-        case appLanguage
-        case appTriggersEnabled
-        case targetAppsData
-        case activateOnACPower
-        case deactivateOnBattery
-        case activateOnExternalDisplay
-    }
-
-    // MARK: - Активное состояние
+    // MARK: - Активное состояние сессии
     public private(set) var isActive: Bool = false
     public var selectedPreset: KeepAwakePreset = .indefinite
-    public var customMinutes: Int = 45 {
+
+    public var customMinutes: Int {
         didSet {
-            defaults.set(customMinutes, forKey: StorageKey.customMinutes.rawValue)
+            settingsStore.customMinutes = customMinutes
         }
     }
-    public var assertionType: SleepAssertionType = .systemOnly {
+
+    public var assertionType: SleepAssertionType {
         didSet {
-            defaults.set(assertionType.rawValue, forKey: StorageKey.assertionType.rawValue)
+            settingsStore.assertionType = assertionType
             if isActive {
                 updateAssertion(activate: true, type: assertionType)
             }
@@ -46,34 +30,48 @@ public final class DoppioState {
     /// Источник запуска текущей активной сессии
     public private(set) var activeTriggerSource: SessionTriggerSource = .manual
 
-    // MARK: - Таймер
+    // MARK: - Таймер и оптимизированный бейдж строки меню
     public private(set) var remainingSeconds: TimeInterval? = nil
     public private(set) var totalDurationSeconds: TimeInterval? = nil
+    public private(set) var menuBarBadgeText: String? = nil
+
+    private var sessionEndTime: Date? = nil
     private var hasSentExpiryNotification: Bool = false
 
+    /// Открыто ли сейчас окно поповера (управляет адаптивной частотой тиков таймера для Zero Idle CPU)
+    public var isPopoverVisible: Bool = false {
+        didSet {
+            guard isPopoverVisible != oldValue, let endTime = sessionEndTime, isActive else { return }
+            syncRemainingTime(with: endTime)
+            startCountdownLoop(targetEndTime: endTime)
+        }
+    }
+
     // MARK: - Настройки строки меню и быстрых действий
-    public var menuBarDisplayStyle: MenuBarDisplayStyle = .standard {
+    public var menuBarDisplayStyle: MenuBarDisplayStyle {
         didSet {
-            defaults.set(menuBarDisplayStyle.rawValue, forKey: StorageKey.menuBarDisplayStyle.rawValue)
+            settingsStore.menuBarDisplayStyle = menuBarDisplayStyle
+            updateMenuBarBadge()
         }
     }
 
-    public var showTimerInMenuBar: Bool = true {
+    public var showTimerInMenuBar: Bool {
         didSet {
-            defaults.set(showTimerInMenuBar, forKey: StorageKey.showTimerInMenuBar.rawValue)
+            settingsStore.showTimerInMenuBar = showTimerInMenuBar
+            updateMenuBarBadge()
         }
     }
 
-    public var quickToggleEnabled: Bool = true {
+    public var quickToggleEnabled: Bool {
         didSet {
-            defaults.set(quickToggleEnabled, forKey: StorageKey.quickToggleEnabled.rawValue)
-            QuickClickMonitor.shared.isEnabled = quickToggleEnabled
+            settingsStore.quickToggleEnabled = quickToggleEnabled
+            quickClickMonitor.isEnabled = quickToggleEnabled
         }
     }
 
-    public var notifyBeforeExpiry: Bool = true {
+    public var notifyBeforeExpiry: Bool {
         didSet {
-            defaults.set(notifyBeforeExpiry, forKey: StorageKey.notifyBeforeExpiry.rawValue)
+            settingsStore.notifyBeforeExpiry = notifyBeforeExpiry
             if notifyBeforeExpiry {
                 Task {
                     await notificationService.requestAuthorization()
@@ -83,62 +81,57 @@ public final class DoppioState {
     }
 
     // MARK: - Умные триггеры
-    public var appTriggersEnabled: Bool = true {
+    public var appTriggersEnabled: Bool {
         didSet {
-            defaults.set(appTriggersEnabled, forKey: StorageKey.appTriggersEnabled.rawValue)
+            settingsStore.appTriggersEnabled = appTriggersEnabled
             checkAppTriggersOnDemand()
         }
     }
 
-    public var targetApps: [TriggerApp] = [] {
+    public var targetApps: [TriggerApp] {
         didSet {
-            saveTargetApps()
+            settingsStore.targetApps = targetApps
             checkAppTriggersOnDemand()
         }
     }
 
-    public var activateOnACPower: Bool = false {
+    public var activateOnACPower: Bool {
         didSet {
-            defaults.set(activateOnACPower, forKey: StorageKey.activateOnACPower.rawValue)
+            settingsStore.activateOnACPower = activateOnACPower
             if activateOnACPower, let info = batteryInfo, info.isPluggedIn, !isActive {
                 activateWithTrigger(.acPower)
             }
         }
     }
 
-    public var deactivateOnBattery: Bool = false {
+    public var deactivateOnBattery: Bool {
         didSet {
-            defaults.set(deactivateOnBattery, forKey: StorageKey.deactivateOnBattery.rawValue)
+            settingsStore.deactivateOnBattery = deactivateOnBattery
         }
     }
 
-    public var activateOnExternalDisplay: Bool = false {
+    public var activateOnExternalDisplay: Bool {
         didSet {
-            defaults.set(activateOnExternalDisplay, forKey: StorageKey.activateOnExternalDisplay.rawValue)
-            if activateOnExternalDisplay, NSScreen.screens.count > 1, !isActive {
+            settingsStore.activateOnExternalDisplay = activateOnExternalDisplay
+            if activateOnExternalDisplay, smartTriggerService.hasExternalDisplayConnected(), !isActive {
                 activateWithTrigger(.externalDisplay)
             }
         }
     }
 
     // MARK: - Защита аккумулятора
-    public var batteryProtectionEnabled: Bool = true {
+    public var batteryProtectionEnabled: Bool {
         didSet {
-            defaults.set(batteryProtectionEnabled, forKey: StorageKey.batteryProtectionEnabled.rawValue)
-            if isActive {
-                if batteryProtectionEnabled {
-                    startBatteryMonitoring()
-                    checkBatteryThreshold()
-                } else {
-                    stopBatteryMonitoring()
-                }
+            settingsStore.batteryProtectionEnabled = batteryProtectionEnabled
+            if isActive && batteryProtectionEnabled {
+                checkBatteryThreshold()
             }
         }
     }
 
-    public var batteryThreshold: Int = 20 {
+    public var batteryThreshold: Int {
         didSet {
-            defaults.set(batteryThreshold, forKey: StorageKey.batteryThreshold.rawValue)
+            settingsStore.batteryThreshold = batteryThreshold
             if isActive {
                 checkBatteryThreshold()
             }
@@ -148,15 +141,16 @@ public final class DoppioState {
     public var isLaunchAtLogin: Bool = false
 
     // MARK: - Язык и локализация
-    public var language: AppLanguage = .defaultLanguage {
+    public var language: AppLanguage {
         didSet {
-            defaults.set(language.rawValue, forKey: StorageKey.appLanguage.rawValue)
+            settingsStore.language = language
             self.l10n = L10n(language: language)
+            updateMenuBarBadge()
         }
     }
-    public private(set) var l10n: L10n = L10n(language: .defaultLanguage)
+    public private(set) var l10n: L10n
 
-    // MARK: - Питание
+    // MARK: - Питание и статус деактивации
     public private(set) var batteryInfo: BatteryInfo? = nil
     public private(set) var lastDeactivationReason: DeactivationReason? = nil
 
@@ -173,12 +167,12 @@ public final class DoppioState {
     private let batteryMonitor: any BatteryMonitoring
     private let launchAtLoginService: any LaunchAtLoginManaging
     private let notificationService: any AppNotificationManaging
-    private let smartTriggerService: (any SmartTriggerManaging)?
-    private let defaults: UserDefaults
+    private let smartTriggerService: any SmartTriggerManaging
+    private let quickClickMonitor: any QuickClickMonitoring
+    private let settingsStore: DoppioSettingsStore
     private let logger = Logger(subsystem: "com.doppio.app", category: "DoppioState")
 
     private var timerTask: Task<Void, Never>?
-    private var batteryCheckTask: Task<Void, Never>?
     private var assertionTask: Task<Void, Never>?
 
     // MARK: - Инициализация
@@ -188,151 +182,99 @@ public final class DoppioState {
         launchAtLoginService: any LaunchAtLoginManaging = LaunchAtLoginService(),
         notificationService: any AppNotificationManaging = AppNotificationService.shared,
         smartTriggerService: (any SmartTriggerManaging)? = nil,
+        quickClickMonitor: (any QuickClickMonitoring)? = nil,
         defaults: UserDefaults = .standard
     ) {
+        let store = DoppioSettingsStore(defaults: defaults)
+        self.settingsStore = store
         self.assertionService = assertionService
         self.batteryMonitor = batteryMonitor
         self.launchAtLoginService = launchAtLoginService
         self.notificationService = notificationService
-        self.defaults = defaults
+        self.smartTriggerService = smartTriggerService ?? SmartTriggerService()
+        self.quickClickMonitor = quickClickMonitor ?? QuickClickMonitor.shared
 
-        let triggerService = smartTriggerService ?? SmartTriggerService()
-        self.smartTriggerService = triggerService
+        // Прямая инициализация сохранённых настроек без вызова didSet и лишних записей на диск
+        let savedLang = store.language
+        self.language = savedLang
+        self.l10n = L10n(language: savedLang)
+        self.assertionType = store.assertionType
+        self.menuBarDisplayStyle = store.menuBarDisplayStyle
+        self.showTimerInMenuBar = store.showTimerInMenuBar
+        self.quickToggleEnabled = store.quickToggleEnabled
+        self.notifyBeforeExpiry = store.notifyBeforeExpiry
+        self.appTriggersEnabled = store.appTriggersEnabled
+        self.activateOnACPower = store.activateOnACPower
+        self.deactivateOnBattery = store.deactivateOnBattery
+        self.activateOnExternalDisplay = store.activateOnExternalDisplay
+        self.targetApps = store.targetApps
+        self.batteryProtectionEnabled = store.batteryProtectionEnabled
+        self.batteryThreshold = store.batteryThreshold
+        self.customMinutes = store.customMinutes
 
-        loadPersistedSettings()
-        refreshBatteryInfo()
         self.isLaunchAtLogin = launchAtLoginService.isEnabled
+        self.batteryInfo = batteryMonitor.fetchBatteryInfo()
 
         setupQuickClickMonitor()
         setupNotificationHandling()
-        setupSmartTriggers(service: triggerService)
+        setupBatteryMonitoring()
+        setupSmartTriggers()
+        checkInitialTriggers()
     }
 
     isolated deinit {
         timerTask?.cancel()
-        batteryCheckTask?.cancel()
         assertionTask?.cancel()
+        batteryMonitor.stopMonitoring()
+        smartTriggerService.stopMonitoring()
     }
 
     // MARK: - Настройка сервисов и обработчиков
 
     private func setupQuickClickMonitor() {
-        QuickClickMonitor.shared.isEnabled = quickToggleEnabled
-        QuickClickMonitor.shared.onQuickToggle = { [weak self] in
+        quickClickMonitor.isEnabled = quickToggleEnabled
+        quickClickMonitor.onQuickToggle = { [weak self] in
             self?.toggle()
         }
-        QuickClickMonitor.shared.startMonitoring()
+        if quickToggleEnabled {
+            quickClickMonitor.startMonitoring()
+        }
     }
 
     private func setupNotificationHandling() {
-        if let appNotifService = notificationService as? AppNotificationService {
-            appNotifService.onActionReceived = { [weak self] action in
-                guard let self = self else { return }
-                switch action {
-                case .extend15Minutes:
-                    self.extendSession(by: 15 * 60)
-                case .makeIndefinite:
-                    self.activate(preset: .indefinite)
-                }
+        notificationService.onActionReceived = { [weak self] action in
+            guard let self = self else { return }
+            switch action {
+            case .extend15Minutes:
+                self.extendSession(by: 15 * 60)
+            case .makeIndefinite:
+                self.activate(preset: .indefinite)
             }
         }
     }
 
-    private func setupSmartTriggers(service: any SmartTriggerManaging) {
-        if let concreteService = service as? SmartTriggerService {
-            concreteService.onRequestActivation = { [weak self] source in
-                self?.handleTriggerActivation(source)
-            }
-            concreteService.onRequestDeactivation = { [weak self] reason in
-                self?.handleTriggerDeactivation(reason)
-            }
-            concreteService.startMonitoring()
-            concreteService.checkCurrentState()
+    private func setupBatteryMonitoring() {
+        batteryMonitor.startMonitoring { [weak self] in
+            self?.refreshBatteryInfo()
         }
     }
 
-    // MARK: - Загрузка сохранённых настроек
-    private func loadPersistedSettings() {
-        let defaults = self.defaults
-
-        if let rawType = defaults.string(forKey: StorageKey.assertionType.rawValue),
-           let type = SleepAssertionType(rawValue: rawType) {
-            self.assertionType = type
-        } else {
-            self.assertionType = .systemOnly
+    private func setupSmartTriggers() {
+        smartTriggerService.onRequestActivation = { [weak self] source in
+            self?.handleTriggerActivation(source)
         }
-
-        if let rawStyle = defaults.string(forKey: StorageKey.menuBarDisplayStyle.rawValue),
-           let style = MenuBarDisplayStyle(rawValue: rawStyle) {
-            self.menuBarDisplayStyle = style
-        } else {
-            self.menuBarDisplayStyle = .standard
+        smartTriggerService.onRequestDeactivation = { [weak self] reason in
+            self?.handleTriggerDeactivation(reason)
         }
-
-        if defaults.object(forKey: StorageKey.showTimerInMenuBar.rawValue) != nil {
-            self.showTimerInMenuBar = defaults.bool(forKey: StorageKey.showTimerInMenuBar.rawValue)
-        }
-
-        if defaults.object(forKey: StorageKey.quickToggleEnabled.rawValue) != nil {
-            self.quickToggleEnabled = defaults.bool(forKey: StorageKey.quickToggleEnabled.rawValue)
-        }
-
-        if defaults.object(forKey: StorageKey.notifyBeforeExpiry.rawValue) != nil {
-            self.notifyBeforeExpiry = defaults.bool(forKey: StorageKey.notifyBeforeExpiry.rawValue)
-        }
-
-        if defaults.object(forKey: StorageKey.appTriggersEnabled.rawValue) != nil {
-            self.appTriggersEnabled = defaults.bool(forKey: StorageKey.appTriggersEnabled.rawValue)
-        }
-
-        if defaults.object(forKey: StorageKey.activateOnACPower.rawValue) != nil {
-            self.activateOnACPower = defaults.bool(forKey: StorageKey.activateOnACPower.rawValue)
-        }
-
-        if defaults.object(forKey: StorageKey.deactivateOnBattery.rawValue) != nil {
-            self.deactivateOnBattery = defaults.bool(forKey: StorageKey.deactivateOnBattery.rawValue)
-        }
-
-        if defaults.object(forKey: StorageKey.activateOnExternalDisplay.rawValue) != nil {
-            self.activateOnExternalDisplay = defaults.bool(forKey: StorageKey.activateOnExternalDisplay.rawValue)
-        }
-
-        if let data = defaults.data(forKey: StorageKey.targetAppsData.rawValue),
-           let apps = try? JSONDecoder().decode([TriggerApp].self, from: data) {
-            self.targetApps = apps
-        }
-
-        if defaults.object(forKey: StorageKey.batteryProtectionEnabled.rawValue) != nil {
-            self.batteryProtectionEnabled = defaults.bool(forKey: StorageKey.batteryProtectionEnabled.rawValue)
-        }
-
-        if defaults.object(forKey: StorageKey.batteryThreshold.rawValue) != nil {
-            let threshold = defaults.integer(forKey: StorageKey.batteryThreshold.rawValue)
-            if threshold >= 5 && threshold <= 50 {
-                self.batteryThreshold = threshold
-            }
-        }
-
-        if defaults.object(forKey: StorageKey.customMinutes.rawValue) != nil {
-            let minutes = defaults.integer(forKey: StorageKey.customMinutes.rawValue)
-            if minutes > 0 {
-                self.customMinutes = minutes
-            }
-        }
-
-        if let rawLang = defaults.string(forKey: StorageKey.appLanguage.rawValue),
-           let savedLang = AppLanguage(rawValue: rawLang) {
-            self.language = savedLang
-        } else {
-            self.language = .defaultLanguage
-        }
-        self.l10n = L10n(language: self.language)
+        smartTriggerService.startMonitoring()
     }
 
-    private func saveTargetApps() {
-        if let data = try? JSONEncoder().encode(targetApps) {
-            defaults.set(data, forKey: StorageKey.targetAppsData.rawValue)
+    private func checkInitialTriggers() {
+        checkAppTriggersOnDemand()
+        if activateOnACPower, let info = batteryInfo, info.isPluggedIn, !isActive {
+            activateWithTrigger(.acPower)
         }
+        smartTriggerService.checkCurrentState()
     }
 
     // MARK: - Публичные действия
@@ -383,6 +325,7 @@ public final class DoppioState {
             let newTotal = (totalDurationSeconds ?? remaining) + seconds
             self.remainingSeconds = newRemaining
             self.totalDurationSeconds = newTotal
+            updateMenuBarBadge()
             startCountdown(duration: newRemaining)
             logger.info("Сессия продлена на \(seconds) сек. Новое время: \(newRemaining) сек")
         }
@@ -392,7 +335,7 @@ public final class DoppioState {
     public func deactivate(reason: DeactivationReason = .sessionCompleted) {
         timerTask?.cancel()
         timerTask = nil
-        stopBatteryMonitoring()
+        sessionEndTime = nil
 
         Task {
             await notificationService.cancelPendingNotifications()
@@ -404,15 +347,20 @@ public final class DoppioState {
         isActive = false
         activeTriggerSource = .manual
         lastDeactivationReason = reason
+        updateMenuBarBadge()
 
         updateAssertion(activate: false, type: assertionType)
 
         logger.info("Doppio деактивирован: \(reason.localized(using: self.l10n))")
     }
 
-    /// Обратная совместимость для строковых причин
-    public func deactivate(reason: String) {
-        deactivate(reason: .sessionCompleted)
+    /// Корректное завершение работы приложения с синхронным освобождением ресурсов
+    public func quitApplication() {
+        deactivate(reason: .quitApp)
+        Task {
+            await assertionService.release()
+            NSApplication.shared.terminate(nil)
+        }
     }
 
     /// Переключение автозапуска
@@ -424,21 +372,23 @@ public final class DoppioState {
         }
     }
 
-    /// Принудительно обновить информацию о батарее
+    /// Принудительно обновить информацию о батарее и проверить триггеры питания
     public func refreshBatteryInfo() {
         let oldInfo = self.batteryInfo
-        self.batteryInfo = batteryMonitor.fetchBatteryInfo()
+        let newInfo = batteryMonitor.fetchBatteryInfo()
+        self.batteryInfo = newInfo
         checkBatteryThreshold()
 
-        if let newInfo = self.batteryInfo, let old = oldInfo {
-            if !old.isPluggedIn && newInfo.isPluggedIn {
+        if let newInfo = newInfo {
+            let wasPluggedIn = oldInfo?.isPluggedIn ?? newInfo.isPluggedIn
+            if !wasPluggedIn && newInfo.isPluggedIn {
                 // Подключили провод питания
                 if activateOnACPower && !isActive {
                     activateWithTrigger(.acPower)
                 }
-            } else if old.isPluggedIn && !newInfo.isPluggedIn {
+            } else if wasPluggedIn && !newInfo.isPluggedIn {
                 // Отключили провод питания
-                if deactivateOnBattery && isActive && activeTriggerSource == .acPower {
+                if deactivateOnBattery && isActive {
                     deactivate(reason: .powerDisconnected)
                 }
             }
@@ -452,17 +402,27 @@ public final class DoppioState {
         targetApps.append(app)
     }
 
+    public func addTargetApp(from url: URL) {
+        guard let app = smartTriggerService.triggerApp(from: url) else { return }
+        addTargetApp(app)
+    }
+
     public func removeTargetApp(id: UUID) {
         targetApps.removeAll { $0.id == id }
     }
 
     public func isTargetAppRunning(_ app: TriggerApp) -> Bool {
-        NSWorkspace.shared.runningApplications.contains { $0.bundleIdentifier == app.bundleIdentifier }
+        smartTriggerService.runningBundleIdentifiers().contains(app.bundleIdentifier)
+    }
+
+    public func candidateRunningApps() -> [TriggerApp] {
+        let existingIds = Set(targetApps.map(\.bundleIdentifier))
+        return smartTriggerService.candidateRunningApps(excluding: existingIds)
     }
 
     private func checkAppTriggersOnDemand() {
-        guard appTriggersEnabled else { return }
-        let runningBundles = Set(NSWorkspace.shared.runningApplications.compactMap(\.bundleIdentifier))
+        guard appTriggersEnabled, !targetApps.isEmpty else { return }
+        let runningBundles = smartTriggerService.runningBundleIdentifiers()
         if let matched = targetApps.first(where: { runningBundles.contains($0.bundleIdentifier) }) {
             if !isActive {
                 activateWithTrigger(.appTrigger(bundleId: matched.bundleIdentifier, appName: matched.displayName))
@@ -503,7 +463,7 @@ public final class DoppioState {
         case .appTerminated:
             guard appTriggersEnabled else { return }
             guard case .appTrigger = activeTriggerSource else { return }
-            let runningBundles = Set(NSWorkspace.shared.runningApplications.compactMap(\.bundleIdentifier))
+            let runningBundles = smartTriggerService.runningBundleIdentifiers()
             let anyStillRunning = targetApps.contains { runningBundles.contains($0.bundleIdentifier) }
             if !anyStillRunning {
                 deactivate(reason: reason)
@@ -511,7 +471,7 @@ public final class DoppioState {
 
         case .powerDisconnected:
             guard deactivateOnBattery else { return }
-            if isActive && activeTriggerSource == .acPower {
+            if isActive {
                 deactivate(reason: reason)
             }
 
@@ -527,7 +487,7 @@ public final class DoppioState {
 
     // MARK: - Вспомогательные вычисляемые свойства
 
-    /// Форматированная строка оставшегося времени для отображения в UI
+    /// Форматированная строка оставшегося времени для отображения в UI поповера
     public var formattedRemainingTime: String {
         guard let remaining = remainingSeconds, remaining > 0 else {
             return "∞"
@@ -544,8 +504,25 @@ public final class DoppioState {
         }
     }
 
-    /// Короткая строка для меню-бара (например, "45м", "45хв", "45m")
-    public var menuBarBadgeText: String? {
+    /// Прогресс оставшегося времени (0.0...1.0) для полосы прогресса в карточке Control Center
+    public var timerProgress: Double? {
+        guard isActive,
+              let remaining = remainingSeconds,
+              let total = totalDurationSeconds,
+              total > 0 else {
+            return nil
+        }
+        return min(max(remaining / total, 0.0), 1.0)
+    }
+
+    private func updateMenuBarBadge() {
+        let computed = computeMenuBarBadgeText()
+        if menuBarBadgeText != computed {
+            menuBarBadgeText = computed
+        }
+    }
+
+    private func computeMenuBarBadgeText() -> String? {
         guard isActive,
               menuBarDisplayStyle == .standard,
               showTimerInMenuBar,
@@ -557,16 +534,6 @@ public final class DoppioState {
         let hours = Int(remaining) / 3600
         let minutes = (Int(remaining) % 3600) / 60
         return l10n.menuBarBadgeText(hours: hours, minutes: minutes)
-    }
-
-    /// Процент оставшегося времени для кольцевого прогресс-бара
-    public var timerProgress: Double {
-        guard let remaining = remainingSeconds,
-              let total = totalDurationSeconds,
-              total > 0 else {
-            return 1.0
-        }
-        return min(max(remaining / total, 0.0), 1.0)
     }
 
     // MARK: - Управление состоянием ассершена (Race Condition Prevention)
@@ -596,15 +563,16 @@ public final class DoppioState {
 
         timerTask?.cancel()
         timerTask = nil
+        sessionEndTime = nil
 
         self.isActive = true
         self.lastDeactivationReason = nil
         self.hasSentExpiryNotification = false
         self.totalDurationSeconds = duration
         self.remainingSeconds = duration
+        updateMenuBarBadge()
 
         updateAssertion(activate: true, type: assertionType)
-        startBatteryMonitoring()
 
         if let duration = duration {
             startCountdown(duration: duration)
@@ -614,69 +582,91 @@ public final class DoppioState {
     }
 
     private func startCountdown(duration: TimeInterval) {
-        let clock = ContinuousClock()
         let targetEndTime = Date().addingTimeInterval(duration)
+        self.sessionEndTime = targetEndTime
+        startCountdownLoop(targetEndTime: targetEndTime)
+    }
+
+    private func startCountdownLoop(targetEndTime: Date) {
+        timerTask?.cancel()
+        let clock = ContinuousClock()
 
         timerTask = Task { [weak self] in
             while !Task.isCancelled {
-                try? await clock.sleep(for: .seconds(1))
-                if Task.isCancelled { break }
-
                 guard let self = self else { break }
 
-                let remaining = targetEndTime.timeIntervalSince(Date())
-                if remaining <= 0 {
+                let currentRemaining = targetEndTime.timeIntervalSinceNow
+                if currentRemaining <= 0 {
                     self.remainingSeconds = 0
+                    self.updateMenuBarBadge()
                     self.timerFinished()
                     break
-                } else {
-                    self.remainingSeconds = remaining
+                }
 
-                    // Отправка уведомления за 60 секунд до окончания
-                    if self.notifyBeforeExpiry,
-                       !self.hasSentExpiryNotification,
-                       remaining <= 60 {
-                        self.hasSentExpiryNotification = true
-                        Task { [weak self] in
-                            guard let self = self else { return }
-                            await self.notificationService.schedulePreExpiryNotification(
-                                title: self.l10n.notificationSessionEndingTitle,
-                                body: self.l10n.notificationSessionEndingBody,
-                                l10n: self.l10n
-                            )
-                        }
-                    }
+                let sleepSeconds = self.nextSleepInterval(for: currentRemaining)
+                try? await clock.sleep(for: .milliseconds(Int(sleepSeconds * 1000)))
+                if Task.isCancelled { break }
+
+                self.syncRemainingTime(with: targetEndTime)
+            }
+        }
+    }
+
+    private func syncRemainingTime(with targetEndTime: Date) {
+        let remaining = targetEndTime.timeIntervalSinceNow
+        if remaining <= 0 {
+            self.remainingSeconds = 0
+            updateMenuBarBadge()
+            timerFinished()
+        } else {
+            self.remainingSeconds = remaining
+            updateMenuBarBadge()
+
+            // Отправка уведомления за 60 секунд до окончания
+            if notifyBeforeExpiry,
+               !hasSentExpiryNotification,
+               remaining <= 60 {
+                hasSentExpiryNotification = true
+                Task { [weak self] in
+                    guard let self = self else { return }
+                    await self.notificationService.schedulePreExpiryNotification(
+                        title: self.l10n.notificationSessionEndingTitle,
+                        body: self.l10n.notificationSessionEndingBody,
+                        l10n: self.l10n
+                    )
                 }
             }
         }
+    }
+
+    /// Адаптивный интервал сна таймера: 1 сек при открытом поповере, до 60 сек в фоне (Zero Idle CPU)
+    private func nextSleepInterval(for remaining: TimeInterval) -> TimeInterval {
+        if isPopoverVisible {
+            return min(1.0, max(0.05, remaining))
+        }
+
+        var nextWakeup = remaining
+
+        // Пробуждение к порогу уведомления (за 60 секунд до окончания)
+        if notifyBeforeExpiry && !hasSentExpiryNotification && remaining > 60 {
+            nextWakeup = min(nextWakeup, remaining - 60.0)
+        }
+
+        // Пробуждение к смене минуты в бейдже строки меню
+        if menuBarDisplayStyle == .standard && showTimerInMenuBar {
+            let secondsIntoCurrentMinute = remaining.truncatingRemainder(dividingBy: 60.0)
+            let toNextMinute = secondsIntoCurrentMinute > 0.1 ? secondsIntoCurrentMinute : 60.0
+            nextWakeup = min(nextWakeup, toNextMinute)
+        }
+
+        return max(0.1, min(nextWakeup, 60.0))
     }
 
     private func timerFinished() {
         deactivate(reason: .timerExpired)
     }
 
-    // MARK: - Энергоэффективный мониторинг батареи
-
-    private func startBatteryMonitoring() {
-        guard batteryProtectionEnabled else { return }
-        stopBatteryMonitoring()
-
-        let clock = ContinuousClock()
-        batteryCheckTask = Task { [weak self] in
-            while !Task.isCancelled {
-                try? await clock.sleep(for: .seconds(30))
-                if Task.isCancelled { break }
-
-                guard let self = self else { break }
-                self.refreshBatteryInfo()
-            }
-        }
-    }
-
-    private func stopBatteryMonitoring() {
-        batteryCheckTask?.cancel()
-        batteryCheckTask = nil
-    }
+    // MARK: - Проверка порога батареи
 
     private func checkBatteryThreshold() {
         guard isActive,
