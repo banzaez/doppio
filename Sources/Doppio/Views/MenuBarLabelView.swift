@@ -17,6 +17,5 @@ struct MenuBarLabelView: View {
                     .monospacedDigit()
             }
         }
-        .background(StatusItemFrameTrackerView())
     }
 }

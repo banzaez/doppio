@@ -38,7 +38,7 @@ public final class AppNotificationService: NSObject, AppNotificationManaging, UN
     /// Коллбэк при нажатии кнопки действия пользователем
     public var onActionReceived: (@MainActor (NotificationPreExpiryAction) -> Void)?
 
-    public override init() {
+    private override init() {
         super.init()
         // В среде swift test у процесса нет bundleIdentifier, поэтому UNUserNotificationCenter не инициализируется
         if Bundle.main.bundleIdentifier != nil {

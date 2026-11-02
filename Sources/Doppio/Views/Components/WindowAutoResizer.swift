@@ -97,9 +97,5 @@ final class ResizerNSView: NSView {
     func syncWindow() {
         guard let window = self.window else { return }
         WindowAutoResizerBridge.shared.register(window: window)
-        // Предотвращаем автоматический захват фокуса текстовым полем при открытии поповера
-        Task { @MainActor [weak window] in
-            window?.makeFirstResponder(nil)
-        }
     }
 }

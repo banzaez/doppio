@@ -411,7 +411,7 @@ struct SettingsView: View {
     }
 
     private var bottomFooterSection: some View {
-        let version = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.1.0"
+        let version = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.2.0"
         return HStack(spacing: 10) {
             Text("Doppio v\(version)")
                 .font(.system(size: 10, weight: .medium, design: .rounded))
@@ -471,6 +471,7 @@ struct SettingsView: View {
     // MARK: - Вспомогательные методы выбора приложений
 
     private func selectAppFromDisk() {
+        NSApp.activate()
         let panel = NSOpenPanel()
         panel.allowedContentTypes = [UTType.application]
         panel.allowsMultipleSelection = false

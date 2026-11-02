@@ -27,20 +27,36 @@ extension SessionTriggerSource {
         case .acPower:
             return l10n.batteryAC
         case .externalDisplay:
-            return "Display"
+            return l10n.badgeExternalDisplay
         }
+    }
+}
+
+@MainActor
+private enum AppIconCache {
+    static var icons: [String: NSImage] = [:]
+
+    static func icon(for bundleIdentifier: String, displayName: String) -> NSImage {
+        if let cached = icons[bundleIdentifier] {
+            return cached
+        }
+        let resolved: NSImage
+        if let url = NSWorkspace.shared.urlForApplication(withBundleIdentifier: bundleIdentifier) {
+            let icon = NSWorkspace.shared.icon(forFile: url.path)
+            icon.size = NSSize(width: 16, height: 16)
+            resolved = icon
+        } else {
+            resolved = NSImage(systemSymbolName: "app.fill", accessibilityDescription: displayName) ?? NSImage()
+        }
+        icons[bundleIdentifier] = resolved
+        return resolved
     }
 }
 
 extension TriggerApp {
     @MainActor
     public var appIcon: NSImage {
-        if let url = NSWorkspace.shared.urlForApplication(withBundleIdentifier: bundleIdentifier) {
-            let icon = NSWorkspace.shared.icon(forFile: url.path)
-            icon.size = NSSize(width: 16, height: 16)
-            return icon
-        }
-        return NSImage(systemSymbolName: "app.fill", accessibilityDescription: displayName) ?? NSImage()
+        AppIconCache.icon(for: bundleIdentifier, displayName: displayName)
     }
 }
 

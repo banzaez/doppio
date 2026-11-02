@@ -162,56 +162,47 @@ struct GlassButtonStyle: ButtonStyle {
         var body: some View {
             configuration.label
                 .background(
-                    RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
-                        .fill(
-                            isSelected
-                                ? (isAccent
-                                   ? Color.orange.opacity(isHovered ? 0.26 : 0.20)
-                                   : Color.primary.opacity(isHovered ? 0.15 : 0.11))
-                                : Color.primary.opacity(
-                                    configuration.isPressed
-                                        ? 0.11
-                                        : (isHovered ? 0.08 : 0.045)
-                                )
-                        )
-                )
-                .overlay(
-                    // Верхний световой блик кнопки
-                    RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
-                        .fill(
-                            LinearGradient(
-                                colors: [
-                                    Color.white.opacity(isHovered ? 0.14 : 0.07),
-                                    Color.clear
-                                ],
-                                startPoint: .top,
-                                endPoint: .center
+                    ZStack {
+                        RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
+                            .fill(
+                                isSelected
+                                    ? (isAccent
+                                       ? Color.orange.opacity(isHovered ? 0.24 : 0.18)
+                                       : Color.primary.opacity(isHovered ? 0.14 : 0.10))
+                                    : Color.primary.opacity(
+                                        configuration.isPressed
+                                            ? 0.12
+                                            : (isHovered ? 0.08 : 0.045)
+                                    )
                             )
-                        )
-                        .allowsHitTesting(false)
+
+                        // Верхний световой блик кнопки (внутри фона, не перекрывает текст)
+                        RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
+                            .fill(
+                                LinearGradient(
+                                    colors: [
+                                        Color.white.opacity(isHovered ? 0.12 : 0.06),
+                                        Color.clear
+                                    ],
+                                    startPoint: .top,
+                                    endPoint: .center
+                                )
+                            )
+
+                        RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
+                            .stroke(
+                                isSelected
+                                    ? (isAccent
+                                       ? Color.orange.opacity(isHovered ? 0.70 : 0.55)
+                                       : Color.primary.opacity(isHovered ? 0.30 : 0.20))
+                                    : Color.primary.opacity(isHovered ? 0.15 : 0.08),
+                                lineWidth: 0.75
+                            )
+                    }
                 )
-                .overlay(
-                    RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
-                        .stroke(
-                            isSelected
-                                ? (isAccent
-                                   ? Color.orange.opacity(isHovered ? 0.75 : 0.60)
-                                   : Color.primary.opacity(isHovered ? 0.35 : 0.22))
-                                : Color.primary.opacity(isHovered ? 0.16 : 0.08),
-                            lineWidth: 0.75
-                        )
-                        .allowsHitTesting(false)
-                )
-                .shadow(
-                    color: isSelected && isAccent
-                        ? Color.orange.opacity(isHovered ? 0.30 : 0.20)
-                        : (isHovered ? Color.black.opacity(0.04) : Color.clear),
-                    radius: isSelected && isAccent ? 6 : 3,
-                    y: 1
-                )
-                .scaleEffect(configuration.isPressed ? 0.96 : (isHovered ? 1.01 : 1.0))
-                .animation(.spring(response: 0.2, dampingFraction: 0.75), value: configuration.isPressed)
-                .animation(.spring(response: 0.2, dampingFraction: 0.75), value: isHovered)
+                .opacity(configuration.isPressed ? 0.85 : 1.0)
+                .animation(.easeOut(duration: 0.12), value: isHovered)
+                .animation(.easeOut(duration: 0.10), value: configuration.isPressed)
                 .onHover { hovering in
                     isHovered = hovering
                 }

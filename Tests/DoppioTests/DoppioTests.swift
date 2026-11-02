@@ -263,6 +263,7 @@ struct DoppioTests {
     private final class MockSmartTrigger: SmartTriggerManaging {
         var onRequestActivation: (@MainActor (SessionTriggerSource) -> Void)?
         var onRequestDeactivation: (@MainActor (DeactivationReason) -> Void)?
+        var onSystemDidWake: (@MainActor () -> Void)?
         var externalDisplayConnected: Bool = false
         var runningBundles: Set<String> = []
 
@@ -290,6 +291,7 @@ struct DoppioTests {
     @MainActor
     private final class MockQuickClickMonitor: QuickClickMonitoring {
         var isEnabled: Bool = true
+        var statusItemScreenFrame: NSRect = .zero
         var onQuickToggle: (() -> Void)?
         func startMonitoring() {}
         func stopMonitoring() {}
@@ -498,5 +500,80 @@ struct DoppioTests {
         let reasonDisplay = DeactivationReason.externalDisplayDisconnected
         #expect(reasonDisplay.localized(using: ru) == "Внешний дисплей отключен")
         #expect(reasonDisplay.localized(using: en) == "External display disconnected")
+    }
+
+    @Test("Проверка монотонного контроллера таймера (SessionTimerController) и Zero-Idle CPU интервалов")
+    @MainActor
+    func sessionTimerControllerBehavior() async throws {
+        let controller = SessionTimerController()
+
+        // При открытом поповере интервал сна не превышает 1 секунду
+        controller.isPopoverVisible = true
+        #expect(controller.nextSleepInterval(for: 120) == 1.0)
+
+        // В фоне с бейджем минут интервал выравнивается по границе минуты (до 60 сек)
+        controller.isPopoverVisible = false
+        controller.showMinuteBadgeInMenuBar = true
+        controller.notifyBeforeExpiry = true
+        #expect(controller.nextSleepInterval(for: 75) == 15.0)
+
+        // Проверка реального истечения короткого монотонного таймера
+        var expired = false
+        controller.onExpired = {
+            expired = true
+        }
+        controller.start(duration: 0.08)
+        #expect(controller.isRunning)
+
+        try await Task.sleep(for: .milliseconds(160))
+        #expect(expired)
+        #expect(!controller.isRunning)
+    }
+
+    @Test("Проверка локализации бейджа внешнего монитора, кэша иконок и системного пробуждения (didWake)")
+    @MainActor
+    func wakeNotificationAndBadgeLocalization() {
+        let ru = L10n(language: .russian)
+        let uk = L10n(language: .ukrainian)
+        let en = L10n(language: .english)
+
+        #expect(SessionTriggerSource.externalDisplay.badgeTitle(using: ru) == "Монитор")
+        #expect(SessionTriggerSource.externalDisplay.badgeTitle(using: uk) == "Монітор")
+        #expect(SessionTriggerSource.externalDisplay.badgeTitle(using: en) == "Display")
+
+        // Проверка кэширования иконок TriggerApp
+        let app = TriggerApp(bundleIdentifier: "com.apple.Finder", displayName: "Finder")
+        let icon1 = app.appIcon
+        let icon2 = app.appIcon
+        #expect(icon1 === icon2)
+
+        // Проверка передачи координат статус-бара через DI и реакции на пробуждение системы
+        let mockAssertion = MockSleepAssertion()
+        let mockBattery = MockBattery(mockInfo: BatteryInfo(percentage: 50, isCharging: false, isPluggedIn: false))
+        let mockLaunch = MockLaunchAtLogin()
+        let mockTrigger = MockSmartTrigger()
+        let mockNotif = MockNotificationService()
+        let mockQuickClick = MockQuickClickMonitor()
+
+        let state = DoppioState(
+            assertionService: mockAssertion,
+            batteryMonitor: mockBattery,
+            launchAtLoginService: mockLaunch,
+            notificationService: mockNotif,
+            smartTriggerService: mockTrigger,
+            quickClickMonitor: mockQuickClick,
+            defaults: makeTestDefaults()
+        )
+
+        let expectedFrame = NSRect(x: 100, y: 0, width: 32, height: 24)
+        state.updateStatusItemFrame(expectedFrame)
+        #expect(mockQuickClick.statusItemScreenFrame == expectedFrame)
+
+        // Симулируем пробуждение Mac с подключенным внешним дисплеем
+        state.activateOnExternalDisplay = true
+        mockTrigger.externalDisplayConnected = true
+        mockTrigger.onSystemDidWake?()
+        #expect(state.isActive)
+        #expect(state.activeTriggerSource == .externalDisplay)
     }
 }

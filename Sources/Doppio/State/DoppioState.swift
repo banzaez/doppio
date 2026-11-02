@@ -35,15 +35,14 @@ public final class DoppioState {
     public private(set) var totalDurationSeconds: TimeInterval? = nil
     public private(set) var menuBarBadgeText: String? = nil
 
-    private var sessionEndTime: Date? = nil
-    private var hasSentExpiryNotification: Bool = false
-
     /// Открыто ли сейчас окно поповера (управляет адаптивной частотой тиков таймера для Zero Idle CPU)
     public var isPopoverVisible: Bool = false {
         didSet {
-            guard isPopoverVisible != oldValue, let endTime = sessionEndTime, isActive else { return }
-            syncRemainingTime(with: endTime)
-            startCountdownLoop(targetEndTime: endTime)
+            guard isPopoverVisible != oldValue else { return }
+            timerController.isPopoverVisible = isPopoverVisible
+            if isActive {
+                timerController.resyncIfNeeded()
+            }
         }
     }
 
@@ -51,6 +50,7 @@ public final class DoppioState {
     public var menuBarDisplayStyle: MenuBarDisplayStyle {
         didSet {
             settingsStore.menuBarDisplayStyle = menuBarDisplayStyle
+            syncTimerControllerBadgeConfig()
             updateMenuBarBadge()
         }
     }
@@ -58,6 +58,7 @@ public final class DoppioState {
     public var showTimerInMenuBar: Bool {
         didSet {
             settingsStore.showTimerInMenuBar = showTimerInMenuBar
+            syncTimerControllerBadgeConfig()
             updateMenuBarBadge()
         }
     }
@@ -72,10 +73,14 @@ public final class DoppioState {
     public var notifyBeforeExpiry: Bool {
         didSet {
             settingsStore.notifyBeforeExpiry = notifyBeforeExpiry
+            timerController.notifyBeforeExpiry = notifyBeforeExpiry
             if notifyBeforeExpiry {
                 Task {
                     await notificationService.requestAuthorization()
                 }
+            }
+            if isActive {
+                timerController.resyncIfNeeded()
             }
         }
     }
@@ -170,9 +175,9 @@ public final class DoppioState {
     private let smartTriggerService: any SmartTriggerManaging
     private let quickClickMonitor: any QuickClickMonitoring
     private let settingsStore: DoppioSettingsStore
+    private let timerController = SessionTimerController()
     private let logger = Logger(subsystem: "com.doppio.app", category: "DoppioState")
 
-    private var timerTask: Task<Void, Never>?
     private var assertionTask: Task<Void, Never>?
 
     // MARK: - Инициализация
@@ -215,6 +220,7 @@ public final class DoppioState {
         self.isLaunchAtLogin = launchAtLoginService.isEnabled
         self.batteryInfo = batteryMonitor.fetchBatteryInfo()
 
+        setupTimerController()
         setupQuickClickMonitor()
         setupNotificationHandling()
         setupBatteryMonitoring()
@@ -223,7 +229,7 @@ public final class DoppioState {
     }
 
     isolated deinit {
-        timerTask?.cancel()
+        timerController.stop()
         assertionTask?.cancel()
         batteryMonitor.stopMonitoring()
         smartTriggerService.stopMonitoring()
@@ -231,14 +237,52 @@ public final class DoppioState {
 
     // MARK: - Настройка сервисов и обработчиков
 
+    private func setupTimerController() {
+        timerController.notifyBeforeExpiry = notifyBeforeExpiry
+        syncTimerControllerBadgeConfig()
+
+        timerController.onTick = { [weak self] remaining in
+            guard let self = self else { return }
+            self.remainingSeconds = remaining
+            self.updateMenuBarBadge()
+        }
+
+        timerController.onPreExpiryThresholdReached = { [weak self] in
+            guard let self = self else { return }
+            Task { [weak self] in
+                guard let self = self else { return }
+                await self.notificationService.schedulePreExpiryNotification(
+                    title: self.l10n.notificationSessionEndingTitle,
+                    body: self.l10n.notificationSessionEndingBody,
+                    l10n: self.l10n
+                )
+            }
+        }
+
+        timerController.onExpired = { [weak self] in
+            guard let self = self else { return }
+            self.remainingSeconds = 0
+            self.updateMenuBarBadge()
+            self.deactivate(reason: .timerExpired)
+        }
+    }
+
+    private func syncTimerControllerBadgeConfig() {
+        timerController.showMinuteBadgeInMenuBar = (menuBarDisplayStyle == .standard && showTimerInMenuBar)
+    }
+
     private func setupQuickClickMonitor() {
         quickClickMonitor.isEnabled = quickToggleEnabled
         quickClickMonitor.onQuickToggle = { [weak self] in
             self?.toggle()
+            WindowAutoResizerBridge.shared.closeWindow()
         }
-        if quickToggleEnabled {
-            quickClickMonitor.startMonitoring()
-        }
+        quickClickMonitor.startMonitoring()
+    }
+
+    /// Обновить координаты иконки строки меню через протокол монитора кликов
+    public func updateStatusItemFrame(_ frame: NSRect) {
+        quickClickMonitor.statusItemScreenFrame = frame
     }
 
     private func setupNotificationHandling() {
@@ -266,7 +310,20 @@ public final class DoppioState {
         smartTriggerService.onRequestDeactivation = { [weak self] reason in
             self?.handleTriggerDeactivation(reason)
         }
+        smartTriggerService.onSystemDidWake = { [weak self] in
+            self?.handleSystemWake()
+        }
         smartTriggerService.startMonitoring()
+    }
+
+    private func handleSystemWake() {
+        refreshBatteryInfo()
+        checkAppTriggersOnDemand()
+        smartTriggerService.checkCurrentState()
+        if isActive {
+            timerController.resyncIfNeeded()
+            updateAssertion(activate: true, type: assertionType)
+        }
     }
 
     private func checkInitialTriggers() {
@@ -318,24 +375,20 @@ public final class DoppioState {
             return
         }
 
-        hasSentExpiryNotification = false
-
         if let remaining = remainingSeconds {
             let newRemaining = remaining + seconds
             let newTotal = (totalDurationSeconds ?? remaining) + seconds
             self.remainingSeconds = newRemaining
             self.totalDurationSeconds = newTotal
             updateMenuBarBadge()
-            startCountdown(duration: newRemaining)
+            timerController.restart(duration: newRemaining)
             logger.info("Сессия продлена на \(seconds) сек. Новое время: \(newRemaining) сек")
         }
     }
 
     /// Выключить бодрствование
     public func deactivate(reason: DeactivationReason = .sessionCompleted) {
-        timerTask?.cancel()
-        timerTask = nil
-        sessionEndTime = nil
+        timerController.stop()
 
         Task {
             await notificationService.cancelPendingNotifications()
@@ -343,7 +396,6 @@ public final class DoppioState {
 
         remainingSeconds = nil
         totalDurationSeconds = nil
-        hasSentExpiryNotification = false
         isActive = false
         activeTriggerSource = .manual
         lastDeactivationReason = reason
@@ -561,13 +613,10 @@ public final class DoppioState {
             return
         }
 
-        timerTask?.cancel()
-        timerTask = nil
-        sessionEndTime = nil
+        timerController.stop()
 
         self.isActive = true
         self.lastDeactivationReason = nil
-        self.hasSentExpiryNotification = false
         self.totalDurationSeconds = duration
         self.remainingSeconds = duration
         updateMenuBarBadge()
@@ -575,95 +624,10 @@ public final class DoppioState {
         updateAssertion(activate: true, type: assertionType)
 
         if let duration = duration {
-            startCountdown(duration: duration)
+            timerController.start(duration: duration)
         }
 
         logger.info("Doppio активирован, режим: \(self.assertionType.rawValue), длительность: \(duration ?? 0) сек")
-    }
-
-    private func startCountdown(duration: TimeInterval) {
-        let targetEndTime = Date().addingTimeInterval(duration)
-        self.sessionEndTime = targetEndTime
-        startCountdownLoop(targetEndTime: targetEndTime)
-    }
-
-    private func startCountdownLoop(targetEndTime: Date) {
-        timerTask?.cancel()
-        let clock = ContinuousClock()
-
-        timerTask = Task { [weak self] in
-            while !Task.isCancelled {
-                guard let self = self else { break }
-
-                let currentRemaining = targetEndTime.timeIntervalSinceNow
-                if currentRemaining <= 0 {
-                    self.remainingSeconds = 0
-                    self.updateMenuBarBadge()
-                    self.timerFinished()
-                    break
-                }
-
-                let sleepSeconds = self.nextSleepInterval(for: currentRemaining)
-                try? await clock.sleep(for: .milliseconds(Int(sleepSeconds * 1000)))
-                if Task.isCancelled { break }
-
-                self.syncRemainingTime(with: targetEndTime)
-            }
-        }
-    }
-
-    private func syncRemainingTime(with targetEndTime: Date) {
-        let remaining = targetEndTime.timeIntervalSinceNow
-        if remaining <= 0 {
-            self.remainingSeconds = 0
-            updateMenuBarBadge()
-            timerFinished()
-        } else {
-            self.remainingSeconds = remaining
-            updateMenuBarBadge()
-
-            // Отправка уведомления за 60 секунд до окончания
-            if notifyBeforeExpiry,
-               !hasSentExpiryNotification,
-               remaining <= 60 {
-                hasSentExpiryNotification = true
-                Task { [weak self] in
-                    guard let self = self else { return }
-                    await self.notificationService.schedulePreExpiryNotification(
-                        title: self.l10n.notificationSessionEndingTitle,
-                        body: self.l10n.notificationSessionEndingBody,
-                        l10n: self.l10n
-                    )
-                }
-            }
-        }
-    }
-
-    /// Адаптивный интервал сна таймера: 1 сек при открытом поповере, до 60 сек в фоне (Zero Idle CPU)
-    private func nextSleepInterval(for remaining: TimeInterval) -> TimeInterval {
-        if isPopoverVisible {
-            return min(1.0, max(0.05, remaining))
-        }
-
-        var nextWakeup = remaining
-
-        // Пробуждение к порогу уведомления (за 60 секунд до окончания)
-        if notifyBeforeExpiry && !hasSentExpiryNotification && remaining > 60 {
-            nextWakeup = min(nextWakeup, remaining - 60.0)
-        }
-
-        // Пробуждение к смене минуты в бейдже строки меню
-        if menuBarDisplayStyle == .standard && showTimerInMenuBar {
-            let secondsIntoCurrentMinute = remaining.truncatingRemainder(dividingBy: 60.0)
-            let toNextMinute = secondsIntoCurrentMinute > 0.1 ? secondsIntoCurrentMinute : 60.0
-            nextWakeup = min(nextWakeup, toNextMinute)
-        }
-
-        return max(0.1, min(nextWakeup, 60.0))
-    }
-
-    private func timerFinished() {
-        deactivate(reason: .timerExpired)
     }
 
     // MARK: - Проверка порога батареи

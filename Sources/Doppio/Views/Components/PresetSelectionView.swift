@@ -1,10 +1,8 @@
 import SwiftUI
 
-/// Секция выбора длительности со стеклянными кнопками и фиксированной строкой своего ввода
+/// Секция выбора длительности со стеклянными кнопками и фиксированной строкой своего таймера
 struct PresetSelectionView: View {
     @Bindable var state: DoppioState
-    @FocusState private var isMinutesFocused: Bool
-    @State private var localMinutes: Int = 45
 
     private let standardPresets: [KeepAwakePreset] = [
         .indefinite,
@@ -31,7 +29,6 @@ struct PresetSelectionView: View {
             ], spacing: 6) {
                 ForEach(standardPresets) { preset in
                     Button {
-                        isMinutesFocused = false
                         withAnimation(.spring(response: 0.25, dampingFraction: 0.8)) {
                             state.selectedPreset = preset
                             state.activate(preset: preset)
@@ -54,29 +51,18 @@ struct PresetSelectionView: View {
                 }
             }
 
-            // Фиксированная стеклянная строка ввода своего времени
+            // Фиксированная стеклянная строка выбора своего времени (- / +)
             customTimeRow
-        }
-        .onAppear {
-            localMinutes = state.customMinutes
-            isMinutesFocused = false
-            Task { @MainActor in
-                isMinutesFocused = false
-            }
-        }
-        .onChange(of: state.customMinutes) { _, newValue in
-            localMinutes = newValue
         }
     }
 
-    /// Стеклянная строка своего времени с прямой печатью с клавиатуры и кнопками - / +
+    /// Стеклянная строка своего времени с кнопками - / + без текстового редактирования
     private var customTimeRow: some View {
         let isSelected = state.selectedPreset == .custom
 
         return HStack(spacing: 6) {
             // Кликабельная левая область выбора и запуска пресета «Свой таймер»
             Button {
-                isMinutesFocused = false
                 activateCustomPreset()
             } label: {
                 HStack(spacing: 5) {
@@ -94,7 +80,7 @@ struct PresetSelectionView: View {
             }
             .buttonStyle(.plain)
 
-            // Степпер и ввод с клавиатуры
+            // Кнопки управления длительностью (- / +) и индикатор минут
             HStack(spacing: 5) {
                 // Кнопка минус
                 Button {
@@ -107,38 +93,25 @@ struct PresetSelectionView: View {
                 }
                 .buttonStyle(GlassButtonStyle(cornerRadius: 10))
 
-                // Поле ввода цифр с клавиатуры + суффикс минут
-                HStack(spacing: 2) {
-                    TextField(
-                        "",
-                        value: $localMinutes,
-                        format: .number
-                    )
-                    .textFieldStyle(.plain)
-                    .multilineTextAlignment(.center)
-                    .font(.system(size: 11, weight: .bold, design: .rounded))
-                    .monospacedDigit()
-                    .frame(width: 32)
-                    .focused($isMinutesFocused)
-                    .onSubmit {
-                        activateCustomPreset()
-                    }
-                    .onChange(of: isMinutesFocused) { _, focused in
-                        if !focused {
-                            commitMinutesSilently()
-                        }
-                    }
+                // Статичное отображение минут без редактирования в текстовом поле
+                HStack(spacing: 3) {
+                    Text("\(state.customMinutes)")
+                        .font(.system(size: 11, weight: .bold, design: .rounded))
+                        .monospacedDigit()
+                        .contentTransition(.numericText())
+                        .foregroundStyle(Color.primary)
 
                     Text(state.l10n.minuteSuffix)
                         .font(.system(size: 10, weight: .medium))
                         .foregroundStyle(isSelected ? Color.orange : Color.secondary)
                         .lineLimit(1)
                 }
-                .padding(.horizontal, 5)
+                .frame(minWidth: 50)
+                .padding(.horizontal, 6)
                 .padding(.vertical, 2)
                 .background(
                     RoundedRectangle(cornerRadius: 6, style: .continuous)
-                        .fill(Color.primary.opacity(isMinutesFocused ? 0.08 : 0.03))
+                        .fill(Color.primary.opacity(0.03))
                 )
 
                 // Кнопка плюс
@@ -158,24 +131,15 @@ struct PresetSelectionView: View {
         .glassCard(cornerRadius: 9, isSelected: isSelected, isAccent: state.isActive)
     }
 
-    private func commitMinutesSilently() {
-        let clamped = max(1, min(720, localMinutes))
-        localMinutes = clamped
-        state.customMinutes = clamped
-    }
-
     private func activateCustomPreset() {
-        isMinutesFocused = false
         withAnimation(.spring(response: 0.25, dampingFraction: 0.8)) {
-            let clamped = max(1, min(720, localMinutes))
-            localMinutes = clamped
+            let clamped = max(1, min(720, state.customMinutes))
             state.customMinutes = clamped
             state.activate(preset: .custom)
         }
     }
 
     private func adjustCustomMinutes(by delta: Int) {
-        isMinutesFocused = false
         withAnimation(.spring(response: 0.2, dampingFraction: 0.8)) {
             let current = state.customMinutes
             let next: Int
@@ -186,7 +150,6 @@ struct PresetSelectionView: View {
             } else {
                 next = max(1, min(720, current + delta))
             }
-            localMinutes = next
             state.customMinutes = next
             state.activate(preset: .custom)
         }

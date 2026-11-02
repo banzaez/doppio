@@ -16,7 +16,7 @@ struct FooterActionsView: View {
                         .font(.system(size: 11, weight: .medium))
                         .lineLimit(1)
                 }
-                .foregroundStyle(Color.secondary)
+                .foregroundStyle(Color.primary.opacity(0.85))
                 .padding(.horizontal, 9)
                 .frame(height: 24)
             }
@@ -55,7 +55,7 @@ struct FooterActionsView: View {
                         .font(.system(size: 11, weight: .medium))
                         .lineLimit(1)
                 }
-                .foregroundStyle(Color.secondary)
+                .foregroundStyle(Color.primary.opacity(0.85))
                 .padding(.horizontal, 9)
                 .frame(height: 24)
             }

@@ -490,12 +490,12 @@ public struct L10n: Sendable {
 
     public var settingsQuickToggleDesc: String {
         switch code {
-        case "uk": return "Option-клік або правий клік по іконці миттєво перемикає бадьорість"
-        case "ru": return "Option-клик или правый клик по иконке мгновенно переключает бодрствование"
-        case "de": return "Option-Klick oder Rechtsklick schaltet den Modus sofort um"
-        case "fr": return "Un clic avec Option ou clic droit bascule l'état sans ouvrir le menu"
-        case "es": return "Un clic con Option o clic derecho activa/desactiva sin abrir el menú"
-        default:   return "Option-click or right-click instantly toggles state without opening popover"
+        case "uk": return "Option-клік (⌥) по іконці миттєво перемикає бадьорість без відкриття меню"
+        case "ru": return "Option-клик (⌥) по иконке мгновенно переключает бодрствование без открытия меню"
+        case "de": return "Option-Klick (⌥) schaltet den Modus sofort um, ohne das Menü zu öffnen"
+        case "fr": return "Un ⌥-clic bascule l'état sans ouvrir le menu"
+        case "es": return "Un ⌥-clic activa/desactiva sin abrir el menú"
+        default:   return "Option-click (⌥) instantly toggles state without opening the menu"
         }
     }
 
@@ -663,6 +663,17 @@ public struct L10n: Sendable {
         case "fr": return "Activer sur écran externe"
         case "es": return "Activar con pantalla externa"
         default:   return "Activate on external display"
+        }
+    }
+
+    public var badgeExternalDisplay: String {
+        switch code {
+        case "uk": return "Монітор"
+        case "ru": return "Монитор"
+        case "de": return "Monitor"
+        case "fr": return "Écran"
+        case "es": return "Monitor"
+        default:   return "Display"
         }
     }
 }

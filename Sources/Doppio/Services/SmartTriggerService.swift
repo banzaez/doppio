@@ -8,6 +8,7 @@ import os
 public protocol SmartTriggerManaging: AnyObject {
     var onRequestActivation: (@MainActor (SessionTriggerSource) -> Void)? { get set }
     var onRequestDeactivation: (@MainActor (DeactivationReason) -> Void)? { get set }
+    var onSystemDidWake: (@MainActor () -> Void)? { get set }
 
     func startMonitoring()
     func stopMonitoring()
@@ -26,6 +27,13 @@ public protocol SmartTriggerManaging: AnyObject {
     func triggerApp(from url: URL) -> TriggerApp?
 }
 
+extension SmartTriggerManaging {
+    public var onSystemDidWake: (@MainActor () -> Void)? {
+        get { nil }
+        set {}
+    }
+}
+
 /// Сервис умных триггеров на базе Swift 6 Structured Concurrency (AsyncSequence уведомлений)
 @MainActor
 public final class SmartTriggerService: SmartTriggerManaging {
@@ -35,6 +43,7 @@ public final class SmartTriggerService: SmartTriggerManaging {
 
     public var onRequestActivation: (@MainActor (SessionTriggerSource) -> Void)?
     public var onRequestDeactivation: (@MainActor (DeactivationReason) -> Void)?
+    public var onSystemDidWake: (@MainActor () -> Void)?
 
     public init() {}
 
@@ -72,6 +81,13 @@ public final class SmartTriggerService: SmartTriggerManaging {
                         self?.handleScreensChanged()
                     }
                 }
+
+                // 4. Поток событий пробуждения системы после аппаратного сна
+                group.addTask { [weak self] in
+                    await Self.observeWakeNotifications { [weak self] in
+                        self?.onSystemDidWake?()
+                    }
+                }
             }
         }
 
@@ -98,6 +114,16 @@ public final class SmartTriggerService: SmartTriggerManaging {
     ) async {
         let defaultCenter = NotificationCenter.default
         for await _ in defaultCenter.notifications(named: NSApplication.didChangeScreenParametersNotification) {
+            if Task.isCancelled { break }
+            await onEvent()
+        }
+    }
+
+    nonisolated private static func observeWakeNotifications(
+        onEvent: @escaping @MainActor @Sendable () -> Void
+    ) async {
+        let wsCenter = NSWorkspace.shared.notificationCenter
+        for await _ in wsCenter.notifications(named: NSWorkspace.didWakeNotification) {
             if Task.isCancelled { break }
             await onEvent()
         }
