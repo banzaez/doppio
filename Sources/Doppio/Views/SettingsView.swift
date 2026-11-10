@@ -108,9 +108,9 @@ struct SettingsView: View {
             // Язык интерфейса
             HStack(spacing: 8) {
                 Image(systemName: "globe")
-                    .font(.system(size: 11.5))
+                    .font(.system(size: 11))
                     .foregroundStyle(Color.secondary)
-                    .frame(width: 15)
+                    .frame(width: 16, alignment: .center)
 
                 Text(state.l10n.settingsLanguage)
                     .font(.system(size: 11))
@@ -165,11 +165,11 @@ struct SettingsView: View {
     private var menuBarSection: some View {
         VStack(alignment: .leading, spacing: 7) {
             // Заголовок и переключатель стилей в компактном блоке
-            HStack(spacing: 6) {
+            HStack(spacing: 8) {
                 Image(systemName: "menubar.rectangle")
                     .font(.system(size: 11, weight: .semibold))
                     .foregroundStyle(Color.orange)
-                    .frame(width: 15)
+                    .frame(width: 16, alignment: .center)
                 Text(state.l10n.menuBarStyleTitle)
                     .font(.system(size: 11, weight: .semibold))
                     .foregroundStyle(Color.primary)
@@ -188,9 +188,9 @@ struct SettingsView: View {
                     } label: {
                         HStack(spacing: 5) {
                             Image(systemName: style.iconName)
-                                .font(.system(size: 9.5))
+                                .font(.system(size: 10))
                             Text(style.title(using: state.l10n))
-                                .font(.system(size: 10, weight: isSelected ? .bold : .medium))
+                                .font(.system(size: 10.5, weight: isSelected ? .bold : .medium))
                                 .lineLimit(1)
                                 .minimumScaleFactor(0.85)
                         }
@@ -231,14 +231,14 @@ struct SettingsView: View {
 
     private var smartTriggersSection: some View {
         VStack(alignment: .leading, spacing: 7) {
-            HStack(spacing: 6) {
+            HStack(spacing: 8) {
                 Image(systemName: "bolt.badge.automatic")
                     .font(.system(size: 11, weight: .semibold))
                     .foregroundStyle(Color.orange)
-                    .frame(width: 15)
+                    .frame(width: 16, alignment: .center)
                 Text(state.l10n.settingsSmartTriggersSection)
-                    .font(.system(size: 10, weight: .semibold))
-                    .foregroundStyle(Color.secondary)
+                    .font(.system(size: 11, weight: .semibold))
+                    .foregroundStyle(Color.primary)
                     .lineLimit(1)
 
                 Spacer()
@@ -336,36 +336,36 @@ struct SettingsView: View {
                 Label(state.l10n.settingsChooseFromDisk, systemImage: "folder")
             }
         } label: {
-            HStack(spacing: 3) {
+            HStack(spacing: 4) {
                 Image(systemName: "plus.circle.fill")
-                    .font(.system(size: 9.5))
+                    .font(.system(size: 10))
                 Text(state.l10n.settingsAddAppButton)
-                    .font(.system(size: 9.5, weight: .medium))
+                    .font(.system(size: 10.5, weight: .medium))
                     .lineLimit(1)
             }
             .foregroundStyle(Color.orange)
-            .padding(.horizontal, 7)
-            .frame(height: 19)
+            .padding(.horizontal, 8)
+            .frame(height: 20)
         }
         .menuStyle(.borderlessButton)
-        .buttonStyle(GlassButtonStyle(cornerRadius: 5))
+        .buttonStyle(GlassButtonStyle(cornerRadius: 6))
     }
 
     private var targetAppsRows: some View {
         VStack(spacing: 3) {
             ForEach(state.targetApps) { app in
-                HStack(spacing: 6) {
+                HStack(spacing: 8) {
                     Image(nsImage: app.appIcon)
                         .resizable()
                         .interpolation(.high)
-                        .frame(width: 13, height: 13)
+                        .frame(width: 14, height: 14)
 
                     Circle()
                         .fill(state.isTargetAppRunning(app) ? Color.green : Color.secondary.opacity(0.35))
                         .frame(width: 5, height: 5)
 
                     Text(app.displayName)
-                        .font(.system(size: 10, weight: .medium))
+                        .font(.system(size: 11, weight: .medium))
                         .foregroundStyle(Color.primary)
                         .lineLimit(1)
 
@@ -377,14 +377,14 @@ struct SettingsView: View {
                         }
                     } label: {
                         Image(systemName: "xmark")
-                            .font(.system(size: 7.5, weight: .bold))
+                            .font(.system(size: 8, weight: .bold))
                             .foregroundStyle(Color.secondary)
-                            .frame(width: 15, height: 15)
+                            .frame(width: 16, height: 16)
                             .contentShape(Rectangle())
                     }
                     .buttonStyle(.plain)
                 }
-                .padding(.horizontal, 6)
+                .padding(.horizontal, 8)
                 .frame(height: 22)
                 .background(
                     RoundedRectangle(cornerRadius: 5, style: .continuous)
@@ -406,7 +406,7 @@ struct SettingsView: View {
                     )
 
                     if state.batteryProtectionEnabled {
-                        HStack(spacing: 4) {
+                        HStack(spacing: 5) {
                             ForEach([10, 15, 20, 25, 30], id: \.self) { pct in
                                 let isSelected = state.batteryThreshold == pct
 
@@ -416,15 +416,15 @@ struct SettingsView: View {
                                     }
                                 } label: {
                                     Text("\(pct)%")
-                                        .font(.system(size: 9.5, weight: isSelected ? .bold : .medium, design: .rounded))
+                                        .font(.system(size: 10.5, weight: isSelected ? .bold : .medium, design: .rounded))
                                         .foregroundStyle(isSelected ? Color.orange : Color.secondary)
                                         .frame(maxWidth: .infinity)
-                                        .frame(height: 20)
+                                        .frame(height: 22)
                                 }
                                 .buttonStyle(GlassButtonStyle(
                                     isSelected: isSelected,
                                     isAccent: true,
-                                    cornerRadius: 5
+                                    cornerRadius: 6
                                 ))
                             }
                         }
@@ -437,19 +437,19 @@ struct SettingsView: View {
             } else {
                 HStack(spacing: 8) {
                     Image(systemName: "desktopcomputer")
-                        .font(.system(size: 11.5))
+                        .font(.system(size: 11))
                         .foregroundStyle(Color.secondary)
-                        .frame(width: 15)
+                        .frame(width: 16, alignment: .center)
 
                     Text(state.l10n.desktopMacNoBattery)
-                        .font(.system(size: 10.5))
+                        .font(.system(size: 11))
                         .foregroundStyle(Color.secondary)
                         .lineLimit(1)
                         .minimumScaleFactor(0.85)
 
                     Spacer()
                 }
-                .frame(height: 21)
+                .frame(height: 22)
                 .padding(.horizontal, 11)
                 .padding(.vertical, 9)
                 .glassCard(cornerRadius: 8)
@@ -471,11 +471,11 @@ struct SettingsView: View {
                     .foregroundStyle(Color.primary)
 
                 Text("v\(version) • macOS 2026")
-                    .font(.system(size: 11, weight: .medium))
+                    .font(.system(size: 11, weight: .regular))
                     .foregroundStyle(Color.secondary)
             }
             .frame(maxWidth: .infinity)
-            .padding(.vertical, 12)
+            .padding(.vertical, 14)
             .glassCard(cornerRadius: 8)
 
             Button {
@@ -505,10 +505,10 @@ struct SettingsView: View {
             Image(systemName: icon)
                 .font(.system(size: 11))
                 .foregroundStyle(Color.secondary)
-                .frame(width: 15)
+                .frame(width: 16, alignment: .center)
 
             Text(title)
-                .font(.system(size: 10.5))
+                .font(.system(size: 11))
                 .foregroundStyle(Color.primary)
                 .lineLimit(1)
                 .minimumScaleFactor(0.85)
@@ -520,7 +520,7 @@ struct SettingsView: View {
                 .controlSize(.mini)
                 .labelsHidden()
         }
-        .frame(height: 21)
+        .frame(height: 22)
         .help(helpText ?? "")
     }
 
