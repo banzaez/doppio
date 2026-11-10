@@ -13,10 +13,10 @@ struct DoppioApp: App {
 
     var body: some Scene {
         MenuBarExtra {
-            DoppioPopoverView(state: state)
+            DoppioMenuView(state: state)
         } label: {
             MenuBarLabelView(state: state)
         }
-        .menuBarExtraStyle(.window)
+        .menuBarExtraStyle(.menu)
     }
 }

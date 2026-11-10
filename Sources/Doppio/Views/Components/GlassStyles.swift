@@ -25,7 +25,7 @@ struct VisualEffectBackground: NSViewRepresentable {
 
 /// Стиль карточки в стандартах Apple macOS Control Center (системное полупрозрачное стекло)
 struct GlassCardModifier: ViewModifier {
-    var cornerRadius: CGFloat = 12
+    var cornerRadius: CGFloat = 8
     var isSelected: Bool = false
     var isAccent: Bool = false
 
@@ -54,7 +54,7 @@ struct GlassCardModifier: ViewModifier {
 
 /// Стеклянная подложка-трек для сегментированных переключателей в стиле macOS Control Center
 struct GlassSegmentTrackModifier: ViewModifier {
-    var cornerRadius: CGFloat = 8
+    var cornerRadius: CGFloat = 7
 
     func body(content: Content) -> some View {
         content
@@ -95,11 +95,11 @@ struct GlassCapsuleModifier: ViewModifier {
 }
 
 extension View {
-    func glassCard(cornerRadius: CGFloat = 12, isSelected: Bool = false, isAccent: Bool = false) -> some View {
+    func glassCard(cornerRadius: CGFloat = 8, isSelected: Bool = false, isAccent: Bool = false) -> some View {
         modifier(GlassCardModifier(cornerRadius: cornerRadius, isSelected: isSelected, isAccent: isAccent))
     }
 
-    func glassSegmentTrack(cornerRadius: CGFloat = 8) -> some View {
+    func glassSegmentTrack(cornerRadius: CGFloat = 7) -> some View {
         modifier(GlassSegmentTrackModifier(cornerRadius: cornerRadius))
     }
 
@@ -112,7 +112,7 @@ extension View {
 struct GlassButtonStyle: ButtonStyle {
     var isSelected: Bool = false
     var isAccent: Bool = false
-    var cornerRadius: CGFloat = 8
+    var cornerRadius: CGFloat = 7
 
     func makeBody(configuration: Configuration) -> some View {
         GlassButtonBody(

@@ -5,13 +5,16 @@ import UniformTypeIdentifiers
 /// Экран настроек Doppio в стеклянном стиле macOS 2026 Liquid Glass (компактная адаптивная вёрстка)
 struct SettingsView: View {
     @Bindable var state: DoppioState
-    let onBack: () -> Void
+    var showsHeader: Bool = true
+    var onBack: (() -> Void)? = nil
 
     var body: some View {
         VStack(alignment: .leading, spacing: 9) {
             // Заголовок с идеально центрированным названием и кнопкой Назад
-            headerView
-                .padding(.bottom, 2)
+            if showsHeader {
+                headerView
+                    .padding(.bottom, 2)
+            }
 
             // Блок 1: Основные параметры (Язык интерфейса и Запуск при входе)
             generalSection
@@ -41,19 +44,21 @@ struct SettingsView: View {
                 .lineLimit(1)
 
             HStack {
-                Button(action: onBack) {
-                    HStack(spacing: 4) {
-                        Image(systemName: "chevron.left")
-                            .font(.system(size: 10, weight: .bold))
-                        Text(state.l10n.backButton)
-                            .font(.system(size: 11, weight: .medium))
-                            .lineLimit(1)
+                if let onBack = onBack {
+                    Button(action: onBack) {
+                        HStack(spacing: 4) {
+                            Image(systemName: "chevron.left")
+                                .font(.system(size: 10, weight: .bold))
+                            Text(state.l10n.backButton)
+                                .font(.system(size: 11, weight: .medium))
+                                .lineLimit(1)
+                        }
+                        .foregroundStyle(Color.orange)
+                        .padding(.horizontal, 8)
+                        .frame(height: 22)
                     }
-                    .foregroundStyle(Color.orange)
-                    .padding(.horizontal, 8)
-                    .frame(height: 22)
+                    .buttonStyle(GlassButtonStyle(cornerRadius: 7))
                 }
-                .buttonStyle(GlassButtonStyle(cornerRadius: 7))
 
                 Spacer()
             }
@@ -117,7 +122,7 @@ struct SettingsView: View {
         }
         .padding(.horizontal, 11)
         .padding(.vertical, 9)
-        .glassCard(cornerRadius: 11)
+        .glassCard(cornerRadius: 8)
     }
 
     private var menuBarSection: some View {
@@ -184,7 +189,7 @@ struct SettingsView: View {
         }
         .padding(.horizontal, 11)
         .padding(.vertical, 9)
-        .glassCard(cornerRadius: 11)
+        .glassCard(cornerRadius: 8)
     }
 
     private var smartTriggersSection: some View {
@@ -268,7 +273,7 @@ struct SettingsView: View {
         }
         .padding(.horizontal, 11)
         .padding(.vertical, 9)
-        .glassCard(cornerRadius: 11)
+        .glassCard(cornerRadius: 8)
     }
 
     private var addAppMenuButton: some View {
@@ -391,7 +396,7 @@ struct SettingsView: View {
                 }
                 .padding(.horizontal, 11)
                 .padding(.vertical, 9)
-                .glassCard(cornerRadius: 11)
+                .glassCard(cornerRadius: 8)
             } else {
                 HStack(spacing: 8) {
                     Image(systemName: "desktopcomputer")
@@ -410,13 +415,13 @@ struct SettingsView: View {
                 .frame(height: 21)
                 .padding(.horizontal, 11)
                 .padding(.vertical, 9)
-                .glassCard(cornerRadius: 11)
+                .glassCard(cornerRadius: 8)
             }
         }
     }
 
     private var bottomFooterSection: some View {
-        let version = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.3.0"
+        let version = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.4.0"
         return HStack(spacing: 10) {
             Text("Doppio v\(version)")
                 .font(.system(size: 10, weight: .medium, design: .rounded))

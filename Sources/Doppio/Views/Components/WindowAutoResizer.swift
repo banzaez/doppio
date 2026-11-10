@@ -35,6 +35,9 @@ final class WindowAutoResizerBridge {
         window.isOpaque = false
         window.backgroundColor = .clear
         window.hasShadow = true
+        window.contentView?.wantsLayer = true
+        window.contentView?.layer?.cornerRadius = 10
+        window.contentView?.layer?.masksToBounds = true
         window.invalidateShadow()
 
         let center = NotificationCenter.default

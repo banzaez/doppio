@@ -710,4 +710,48 @@ public struct L10n: Sendable {
         default:   return "Duration"
         }
     }
+
+    public var menuExtend: String {
+        switch code {
+        case "uk": return "Продовжити..."
+        case "ru": return "Продлить..."
+        case "de": return "Verlängern..."
+        case "fr": return "Prolonger..."
+        case "es": return "Extender..."
+        default:   return "Extend..."
+        }
+    }
+
+    public var menuMakeIndefinite: String {
+        switch code {
+        case "uk": return "Сделать безстроковим"
+        case "ru": return "Сделать бессрочным"
+        case "de": return "Unbegrenzt fortsetzen"
+        case "fr": return "Rendre indéfini"
+        case "es": return "Hacer indefinido"
+        default:   return "Make indefinite"
+        }
+    }
+
+    public var menuRunning: String {
+        switch code {
+        case "uk": return "працює"
+        case "ru": return "работает"
+        case "de": return "läuft"
+        case "fr": return "en cours"
+        case "es": return "ejecutándose"
+        default:   return "running"
+        }
+    }
+
+    public var menuAddRunningApp: String {
+        switch code {
+        case "uk": return "Додати запущену програму..."
+        case "ru": return "Добавить запущенную программу..."
+        case "de": return "Laufende App hinzufügen..."
+        case "fr": return "Ajouter une app active..."
+        case "es": return "Añadir app en ejecución..."
+        default:   return "Add running app..."
+        }
+    }
 }

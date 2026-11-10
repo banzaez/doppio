@@ -9,7 +9,7 @@ struct ControlCenterHeroCard: View {
             // Левая кликабельная область (иконка + статус)
             HStack(spacing: 12) {
                 ZStack {
-                    RoundedRectangle(cornerRadius: 10, style: .continuous)
+                    RoundedRectangle(cornerRadius: 8, style: .continuous)
                         .fill(
                             state.isActive
                                 ? LinearGradient(
@@ -25,12 +25,12 @@ struct ControlCenterHeroCard: View {
                         )
                         .frame(width: 38, height: 38)
                         .overlay(
-                            RoundedRectangle(cornerRadius: 10, style: .continuous)
+                            RoundedRectangle(cornerRadius: 8, style: .continuous)
                                 .stroke(
                                     state.isActive
                                         ? Color.white.opacity(0.35)
-                                        : Color.white.opacity(0.12),
-                                    lineWidth: 0.75
+                                        : Color.primary.opacity(0.10),
+                                    lineWidth: 0.5
                                 )
                         )
                         .shadow(
@@ -130,8 +130,8 @@ struct ControlCenterHeroCard: View {
                 .transition(.opacity)
             }
         }
-        .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
-        .glassCard(cornerRadius: 14, isSelected: state.isActive, isAccent: true)
+        .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+        .glassCard(cornerRadius: 8, isSelected: state.isActive, isAccent: true)
     }
 
     private var statusSubtitle: String {

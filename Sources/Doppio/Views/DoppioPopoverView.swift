@@ -19,14 +19,14 @@ struct DoppioPopoverView: View {
                 .transition(.opacity)
             }
         }
-        .padding(12)
+        .padding(10)
         .frame(width: 320)
         .background(
             VisualEffectBackground(material: .popover, blendingMode: .behindWindow)
-                .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+                .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
                 .overlay(
-                    RoundedRectangle(cornerRadius: 16, style: .continuous)
-                        .stroke(Color.primary.opacity(0.12), lineWidth: 0.5)
+                    RoundedRectangle(cornerRadius: 10, style: .continuous)
+                        .stroke(Color.primary.opacity(0.10), lineWidth: 0.5)
                 )
         )
         .background(
@@ -120,7 +120,7 @@ struct DoppioPopoverView: View {
         }
         .padding(.horizontal, 10)
         .frame(height: 28)
-        .glassCard(cornerRadius: 9)
+        .glassCard(cornerRadius: 7)
         .transition(.opacity)
     }
 }

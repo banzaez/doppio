@@ -128,7 +128,7 @@ struct PresetSelectionView: View {
         }
         .padding(.horizontal, 10)
         .frame(height: 34)
-        .glassCard(cornerRadius: 9, isSelected: isSelected, isAccent: state.isActive)
+        .glassCard(cornerRadius: 7, isSelected: isSelected, isAccent: state.isActive)
     }
 
     private func activateCustomPreset() {
