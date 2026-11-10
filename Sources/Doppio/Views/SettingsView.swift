@@ -2,35 +2,72 @@ import SwiftUI
 import AppKit
 import UniformTypeIdentifiers
 
+/// Вкладки экрана настроек
+enum SettingsTab: String, CaseIterable, Identifiable {
+    case general
+    case automation
+    case about
+
+    var id: String { rawValue }
+
+    func title(using l10n: L10n) -> String {
+        switch self {
+        case .general: return l10n.tabGeneral
+        case .automation: return l10n.tabAutomation
+        case .about: return l10n.tabAbout
+        }
+    }
+
+    var icon: String {
+        switch self {
+        case .general: return "gearshape"
+        case .automation: return "bolt.badge.automatic"
+        case .about: return "info.circle"
+        }
+    }
+}
+
 /// Экран настроек Doppio в стеклянном стиле macOS 2026 Liquid Glass (компактная адаптивная вёрстка)
 struct SettingsView: View {
     @Bindable var state: DoppioState
     var showsHeader: Bool = true
     var onBack: (() -> Void)? = nil
 
+    @State private var selectedTab: SettingsTab = .general
+
     var body: some View {
-        VStack(alignment: .leading, spacing: 9) {
+        VStack(alignment: .leading, spacing: 10) {
             // Заголовок с идеально центрированным названием и кнопкой Назад
             if showsHeader {
                 headerView
                     .padding(.bottom, 2)
             }
 
-            // Блок 1: Основные параметры (Язык интерфейса и Запуск при входе)
-            generalSection
+            // Нативные вкладки настроек macOS
+            Picker("", selection: $selectedTab) {
+                ForEach(SettingsTab.allCases) { tab in
+                    Label(tab.title(using: state.l10n), systemImage: tab.icon)
+                        .tag(tab)
+                }
+            }
+            .pickerStyle(.segmented)
+            .labelsHidden()
 
-            // Блок 2: Строка меню (Компактный режим для MacBook Notch, Быстрый клик, Уведомления)
-            menuBarSection
+            // Содержимое выбранной вкладки
+            switch selectedTab {
+            case .general:
+                generalSection
+                menuBarSection
+            case .automation:
+                smartTriggersSection
+                if state.batteryInfo != nil {
+                    batterySection
+                }
+            case .about:
+                aboutSection
+            }
 
-            // Блок 3: Умные триггеры автоматизации (App Triggers, AC Power, Display)
-            smartTriggersSection
-
-            // Блок 4: Защита аккумулятора
-            batterySection
-
-            // Блок 5: Выход из приложения и версия
-            bottomFooterSection
-                .padding(.top, 2)
+            Spacer(minLength: 0)
         }
     }
 
@@ -420,33 +457,42 @@ struct SettingsView: View {
         }
     }
 
-    private var bottomFooterSection: some View {
+    private var aboutSection: some View {
         let version = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.4.0"
-        return HStack(spacing: 10) {
-            Text("Doppio v\(version)")
-                .font(.system(size: 10, weight: .medium, design: .rounded))
-                .foregroundStyle(Color.secondary.opacity(0.65))
-                .padding(.leading, 4)
+        return VStack(spacing: 12) {
+            VStack(spacing: 6) {
+                Image(systemName: "cup.and.saucer.fill")
+                    .font(.system(size: 36))
+                    .foregroundStyle(Color.orange)
+                    .symbolEffect(.bounce, value: state.isActive)
 
-            Spacer()
+                Text("Doppio")
+                    .font(.system(size: 16, weight: .bold, design: .rounded))
+                    .foregroundStyle(Color.primary)
+
+                Text("v\(version) • macOS 2026")
+                    .font(.system(size: 11, weight: .medium))
+                    .foregroundStyle(Color.secondary)
+            }
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 12)
+            .glassCard(cornerRadius: 8)
 
             Button {
                 state.quitApplication()
             } label: {
-                HStack(spacing: 5) {
+                HStack(spacing: 6) {
                     Image(systemName: "power")
-                        .font(.system(size: 10, weight: .semibold))
+                        .font(.system(size: 11, weight: .semibold))
                     Text(state.l10n.quitButton)
-                        .font(.system(size: 10.5, weight: .medium))
-                        .lineLimit(1)
+                        .font(.system(size: 11, weight: .medium))
                 }
-                .foregroundStyle(Color.red.opacity(0.88))
-                .padding(.horizontal, 10)
-                .frame(height: 24)
+                .foregroundStyle(Color.red.opacity(0.9))
+                .frame(maxWidth: .infinity)
+                .frame(height: 28)
             }
-            .buttonStyle(GlassButtonStyle(cornerRadius: 7))
+            .buttonStyle(GlassButtonStyle(cornerRadius: 8))
         }
-        .frame(height: 26)
     }
 
     private func settingToggleRow(

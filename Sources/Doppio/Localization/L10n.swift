@@ -276,6 +276,39 @@ public struct L10n: Sendable {
         }
     }
 
+    public var tabGeneral: String {
+        switch code {
+        case "uk": return "Основні"
+        case "ru": return "Основные"
+        case "de": return "Allgemein"
+        case "fr": return "Général"
+        case "es": return "General"
+        default:   return "General"
+        }
+    }
+
+    public var tabAutomation: String {
+        switch code {
+        case "uk": return "Автоматизація"
+        case "ru": return "Автоматизация"
+        case "de": return "Automation"
+        case "fr": return "Automatisation"
+        case "es": return "Automatización"
+        default:   return "Automation"
+        }
+    }
+
+    public var tabAbout: String {
+        switch code {
+        case "uk": return "Про Doppio"
+        case "ru": return "О Doppio"
+        case "de": return "Über Doppio"
+        case "fr": return "À propos"
+        case "es": return "Acerca de"
+        default:   return "About"
+        }
+    }
+
     public var settingsLanguage: String {
         switch code {
         case "uk": return "Мова інтерфейсу"

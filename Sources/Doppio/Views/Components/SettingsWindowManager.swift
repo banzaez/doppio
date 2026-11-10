@@ -22,10 +22,11 @@ public final class SettingsWindowManager {
 
         let window = NSWindow(contentViewController: hostingController)
         window.title = state.l10n.settingsTitle
-        window.styleMask = [.titled, .closable, .miniaturizable]
+        window.styleMask = [.titled, .closable, .miniaturizable, .resizable]
         window.titlebarAppearsTransparent = false
         window.isReleasedWhenClosed = false
-        window.setContentSize(NSSize(width: 360, height: 690))
+        window.minSize = NSSize(width: 350, height: 260)
+        window.setContentSize(NSSize(width: 360, height: 350))
         window.center()
 
         let controller = NSWindowController(window: window)
@@ -45,12 +46,9 @@ public struct SettingsWindowContainer: View {
     }
 
     public var body: some View {
-        ScrollView(.vertical, showsIndicators: false) {
-            SettingsView(state: state, showsHeader: false)
-                .padding(.horizontal, 18)
-                .padding(.vertical, 16)
-                .frame(width: 360)
-        }
-        .frame(width: 360, height: 690)
+        SettingsView(state: state, showsHeader: false)
+            .padding(.horizontal, 18)
+            .padding(.vertical, 14)
+            .frame(width: 360)
     }
 }
