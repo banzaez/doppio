@@ -522,10 +522,14 @@ struct DoppioTests {
         controller.onExpired = {
             expired = true
         }
-        controller.start(duration: 0.08)
+        controller.isPopoverVisible = true
+        controller.start(duration: 0.05)
         #expect(controller.isRunning)
 
-        try await Task.sleep(for: .milliseconds(160))
+        for _ in 0..<15 {
+            if expired && !controller.isRunning { break }
+            try await Task.sleep(for: .milliseconds(40))
+        }
         #expect(expired)
         #expect(!controller.isRunning)
     }
