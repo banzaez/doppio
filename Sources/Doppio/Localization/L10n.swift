@@ -49,12 +49,12 @@ public struct L10n: Sendable {
     // MARK: - Таймер и пресеты
     public var sectionTimer: String {
         switch code {
-        case "uk": return "ТАЙМЕР БАДЬОРОСТІ"
-        case "ru": return "ТАЙМЕР БОДРСТВОВАНИЯ"
-        case "de": return "AKTIVITÄTS-TIMER"
-        case "fr": return "MINUTERIE D'ÉVEIL"
-        case "es": return "TEMPORIZADOR"
-        default:   return "KEEP-AWAKE TIMER"
+        case "uk": return "Таймер бадьорості"
+        case "ru": return "Таймер бодрствования"
+        case "de": return "Aktivitäts-Timer"
+        case "fr": return "Minuterie d'éveil"
+        case "es": return "Temporizador"
+        default:   return "Keep-Awake Timer"
         }
     }
 
@@ -155,12 +155,12 @@ public struct L10n: Sendable {
     // MARK: - Режимы бодрствования
     public var sectionMode: String {
         switch code {
-        case "uk": return "РЕЖИМ БАДЬОРОСТІ"
-        case "ru": return "РЕЖИМ БОДРСТВОВАНИЯ"
-        case "de": return "AKTIVITÄTSMODUS"
-        case "fr": return "MODE D'ÉVEIL"
-        case "es": return "MODO DE ACTIVIDAD"
-        default:   return "KEEP-AWAKE MODE"
+        case "uk": return "Режим бадьорості"
+        case "ru": return "Режим бодрствования"
+        case "de": return "Aktivitätsmodus"
+        case "fr": return "Mode d'éveil"
+        case "es": return "Modo de actividad"
+        default:   return "Keep-Awake Mode"
         }
     }
 
@@ -591,12 +591,12 @@ public struct L10n: Sendable {
     // MARK: - Умные триггеры (Smart Triggers)
     public var settingsSmartTriggersSection: String {
         switch code {
-        case "uk": return "РОЗУМНІ ТРИГЕРИ"
-        case "ru": return "УМНЫЕ ТРИГГЕРЫ"
-        case "de": return "INTELLIGENTE TRIGGER"
-        case "fr": return "DÉCLENCHEURS INTELLIGENTS"
-        case "es": return "DISPARADORES INTELIGENTES"
-        default:   return "SMART TRIGGERS"
+        case "uk": return "Розумні тригери"
+        case "ru": return "Умные триггеры"
+        case "de": return "Intelligente Trigger"
+        case "fr": return "Déclencheurs intelligents"
+        case "es": return "Disparadores inteligentes"
+        default:   return "Smart Triggers"
         }
     }
 
