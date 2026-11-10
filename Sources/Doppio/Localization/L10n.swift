@@ -831,4 +831,137 @@ public struct L10n: Sendable {
         default:   return "Cancel"
         }
     }
+
+    // MARK: - Обновления (App Updates)
+    public var menuCheckUpdates: String {
+        switch code {
+        case "uk": return "Перевірити оновлення..."
+        case "ru": return "Проверить обновления..."
+        case "de": return "Nach Updates suchen..."
+        case "fr": return "Rechercher des mises à jour..."
+        case "es": return "Buscar actualizaciones..."
+        default:   return "Check for Updates..."
+        }
+    }
+
+    public var updateSectionTitle: String {
+        switch code {
+        case "uk": return "Оновлення"
+        case "ru": return "Обновления"
+        case "de": return "Aktualisierungen"
+        case "fr": return "Mises à jour"
+        case "es": return "Actualizaciones"
+        default:   return "Updates"
+        }
+    }
+
+    public var updateCheckButton: String {
+        switch code {
+        case "uk": return "Перевірити"
+        case "ru": return "Проверить"
+        case "de": return "Prüfen"
+        case "fr": return "Vérifier"
+        case "es": return "Comprobar"
+        default:   return "Check"
+        }
+    }
+
+    public var updateChecking: String {
+        switch code {
+        case "uk": return "Пошук..."
+        case "ru": return "Поиск..."
+        case "de": return "Suche..."
+        case "fr": return "Recherche..."
+        case "es": return "Buscando..."
+        default:   return "Checking..."
+        }
+    }
+
+    public var updateAutoCheck: String {
+        switch code {
+        case "uk": return "Перевіряти оновлення автоматично"
+        case "ru": return "Проверять обновления автоматически"
+        case "de": return "Automatisch nach Updates suchen"
+        case "fr": return "Rechercher automatiquement les mises à jour"
+        case "es": return "Buscar actualizaciones automáticamente"
+        default:   return "Automatically check for updates"
+        }
+    }
+
+    public var updateAvailableTitle: String {
+        switch code {
+        case "uk": return "Доступне оновлення"
+        case "ru": return "Доступно обновление"
+        case "de": return "Update verfügbar"
+        case "fr": return "Mise à jour disponible"
+        case "es": return "Actualización disponible"
+        default:   return "Update Available"
+        }
+    }
+
+    public func updateAvailableDesc(_ version: String) -> String {
+        switch code {
+        case "uk": return "Доступна нова версія Doppio: v\(version)"
+        case "ru": return "Доступна новая версия Doppio: v\(version)"
+        case "de": return "Neue Version von Doppio verfügbar: v\(version)"
+        case "fr": return "Nouvelle version de Doppio disponible : v\(version)"
+        case "es": return "Nueva versión de Doppio disponible: v\(version)"
+        default:   return "A new version of Doppio is available: v\(version)"
+        }
+    }
+
+    public var updateDownloadButton: String {
+        switch code {
+        case "uk": return "Завантажити оновлення"
+        case "ru": return "Скачать обновление"
+        case "de": return "Update herunterladen"
+        case "fr": return "Télécharger la mise à jour"
+        case "es": return "Descargar actualización"
+        default:   return "Download Update"
+        }
+    }
+
+    public var updateLaterButton: String {
+        switch code {
+        case "uk": return "Пізніше"
+        case "ru": return "Позже"
+        case "de": return "Später"
+        case "fr": return "Plus tard"
+        case "es": return "Más tarde"
+        default:   return "Later"
+        }
+    }
+
+    public var updateUpToDateTitle: String {
+        switch code {
+        case "uk": return "У вас найновіша версія"
+        case "ru": return "У вас новейшая версия"
+        case "de": return "Sie sind auf dem neuesten Stand"
+        case "fr": return "Vous êtes à jour"
+        case "es": return "Estás al día"
+        default:   return "You're Up to Date"
+        }
+    }
+
+    public func updateUpToDateMessage(_ version: String) -> String {
+        switch code {
+        case "uk": return "Встановлена найновіша версія Doppio v\(version)."
+        case "ru": return "Установлена актуальная версия Doppio v\(version)."
+        case "de": return "Doppio v\(version) ist die aktuellste Version."
+        case "fr": return "Doppio v\(version) est la version la plus récente."
+        case "es": return "Doppio v\(version) es la versión más reciente."
+        default:   return "Doppio v\(version) is the newest version available."
+        }
+    }
+
+    public var updateCheckFailedTitle: String {
+        switch code {
+        case "uk": return "Помилка перевірки оновлень"
+        case "ru": return "Ошибка проверки обновлений"
+        case "de": return "Fehler bei der Update-Prüfung"
+        case "fr": return "Échec de la recherche de mise à jour"
+        case "es": return "Error al buscar actualizaciones"
+        default:   return "Update Check Failed"
+        }
+    }
 }

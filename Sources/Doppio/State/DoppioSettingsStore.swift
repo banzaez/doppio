@@ -18,6 +18,8 @@ public struct DoppioSettingsStore {
         case activateOnACPower
         case deactivateOnBattery
         case activateOnExternalDisplay
+        case autoCheckUpdatesEnabled
+        case lastUpdateCheckTime
     }
 
     private let defaults: UserDefaults
@@ -191,6 +193,26 @@ public struct DoppioSettingsStore {
         }
         nonmutating set {
             defaults.set(newValue.rawValue, forKey: StorageKey.appLanguage.rawValue)
+        }
+    }
+
+    public var autoCheckUpdatesEnabled: Bool {
+        get {
+            defaults.object(forKey: StorageKey.autoCheckUpdatesEnabled.rawValue) != nil
+                ? defaults.bool(forKey: StorageKey.autoCheckUpdatesEnabled.rawValue)
+                : true
+        }
+        nonmutating set {
+            defaults.set(newValue, forKey: StorageKey.autoCheckUpdatesEnabled.rawValue)
+        }
+    }
+
+    public var lastUpdateCheckTime: Date? {
+        get {
+            defaults.object(forKey: StorageKey.lastUpdateCheckTime.rawValue) as? Date
+        }
+        nonmutating set {
+            defaults.set(newValue, forKey: StorageKey.lastUpdateCheckTime.rawValue)
         }
     }
 }

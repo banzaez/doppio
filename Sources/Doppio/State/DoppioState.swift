@@ -157,6 +157,13 @@ public final class DoppioState {
 
     public var isLaunchAtLogin: Bool = false
 
+    // MARK: - Автообновления
+    public var autoCheckUpdatesEnabled: Bool {
+        didSet {
+            settingsStore.autoCheckUpdatesEnabled = autoCheckUpdatesEnabled
+        }
+    }
+
     // MARK: - Язык и локализация
     public var language: AppLanguage {
         didSet {
@@ -228,6 +235,7 @@ public final class DoppioState {
         self.batteryProtectionEnabled = store.batteryProtectionEnabled
         self.batteryThreshold = store.batteryThreshold
         self.customMinutes = store.customMinutes
+        self.autoCheckUpdatesEnabled = store.autoCheckUpdatesEnabled
 
         self.isLaunchAtLogin = launchAtLoginService.isEnabled
         self.batteryInfo = batteryMonitor.fetchBatteryInfo()
@@ -238,6 +246,17 @@ public final class DoppioState {
         setupBatteryMonitoring()
         setupSmartTriggers()
         checkInitialTriggers()
+
+        if store.autoCheckUpdatesEnabled {
+            let lastCheck = store.lastUpdateCheckTime ?? .distantPast
+            if Date().timeIntervalSince(lastCheck) > 24 * 3600 {
+                store.lastUpdateCheckTime = Date()
+                Task { @MainActor in
+                    try? await Task.sleep(for: .seconds(3))
+                    await AppUpdateService.shared.checkForUpdates(isUserInitiated: false)
+                }
+            }
+        }
     }
 
     isolated deinit {

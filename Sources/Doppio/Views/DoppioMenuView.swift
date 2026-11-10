@@ -138,6 +138,14 @@ struct DoppioMenuView: View {
     @ViewBuilder
     private var systemActionsSection: some View {
         Button {
+            Task { @MainActor in
+                await AppUpdateService.shared.checkForUpdates(isUserInitiated: true, l10n: state.l10n)
+            }
+        } label: {
+            Label(state.l10n.menuCheckUpdates, systemImage: "arrow.triangle.2.circlepath")
+        }
+
+        Button {
             SettingsWindowManager.shared.show(state: state)
         } label: {
             Label(state.l10n.settingsTitle + "...", systemImage: "gearshape")

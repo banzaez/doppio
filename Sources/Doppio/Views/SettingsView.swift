@@ -557,55 +557,108 @@ struct SettingsView: View {
 
     private var aboutSection: some View {
         let version = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.4.0"
-        return VStack(spacing: 10) {
-            VStack(spacing: 6) {
+        return VStack(spacing: 8) {
+            // Карточка приложения
+            VStack(spacing: 4) {
                 Image(systemName: "cup.and.saucer.fill")
-                    .font(.system(size: 36))
+                    .font(.system(size: 32))
                     .foregroundStyle(Color.orange)
                     .symbolEffect(.bounce, value: state.isActive)
 
                 Text("Doppio")
-                    .font(.system(size: 16, weight: .bold, design: .rounded))
+                    .font(.system(size: 15, weight: .bold, design: .rounded))
                     .foregroundStyle(Color.primary)
 
                 Text("v\(version) • macOS 2026")
-                    .font(.system(size: 11, weight: .regular))
+                    .font(.system(size: 10.5, weight: .regular))
                     .foregroundStyle(Color.secondary)
             }
             .frame(maxWidth: .infinity)
-            .padding(.vertical, 14)
+            .padding(.vertical, 10)
             .glassCard(cornerRadius: 10)
 
-            if let url = URL(string: "https://github.com/banzaez/doppio") {
-                Link(destination: url) {
-                    HStack(spacing: 6) {
-                        Image(systemName: "link")
-                            .font(.system(size: 10.5))
-                        Text("GitHub • banzaez/doppio")
+            // Блок обновлений
+            updateCardView
+
+            // Ссылка на GitHub и выход
+            HStack(spacing: 8) {
+                if let url = URL(string: "https://github.com/banzaez/doppio") {
+                    Link(destination: url) {
+                        HStack(spacing: 5) {
+                            Image(systemName: "link")
+                                .font(.system(size: 10))
+                            Text("GitHub")
+                                .font(.system(size: 10.5, weight: .medium))
+                        }
+                        .foregroundStyle(Color.primary.opacity(0.85))
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 26)
+                    }
+                    .buttonStyle(GlassButtonStyle(cornerRadius: 7))
+                }
+
+                Button {
+                    state.quitApplication()
+                } label: {
+                    HStack(spacing: 5) {
+                        Image(systemName: "power")
+                            .font(.system(size: 10, weight: .semibold))
+                        Text(state.l10n.quitButton)
                             .font(.system(size: 10.5, weight: .medium))
                     }
-                    .foregroundStyle(Color.primary.opacity(0.85))
+                    .foregroundStyle(Color.red.opacity(0.9))
                     .frame(maxWidth: .infinity)
                     .frame(height: 26)
                 }
                 .buttonStyle(GlassButtonStyle(cornerRadius: 7))
             }
-
-            Button {
-                state.quitApplication()
-            } label: {
-                HStack(spacing: 6) {
-                    Image(systemName: "power")
-                        .font(.system(size: 11, weight: .semibold))
-                    Text(state.l10n.quitButton)
-                        .font(.system(size: 11, weight: .medium))
-                }
-                .foregroundStyle(Color.red.opacity(0.9))
-                .frame(maxWidth: .infinity)
-                .frame(height: 28)
-            }
-            .buttonStyle(GlassButtonStyle(cornerRadius: 8))
         }
+    }
+
+    private var updateCardView: some View {
+        VStack(spacing: 7) {
+            HStack(spacing: 8) {
+                Image(systemName: "arrow.triangle.2.circlepath")
+                    .font(.system(size: 11))
+                    .foregroundStyle(Color.secondary)
+                    .frame(width: 16, alignment: .center)
+
+                Text(state.l10n.updateSectionTitle)
+                    .font(.system(size: 11, weight: .semibold))
+                    .foregroundStyle(Color.primary)
+
+                Spacer()
+
+                Button {
+                    Task { @MainActor in
+                        await AppUpdateService.shared.checkForUpdates(isUserInitiated: true, l10n: state.l10n)
+                    }
+                } label: {
+                    HStack(spacing: 4) {
+                        Image(systemName: "arrow.clockwise")
+                            .font(.system(size: 9.5))
+                        Text(state.l10n.updateCheckButton)
+                            .font(.system(size: 10, weight: .medium))
+                    }
+                    .foregroundStyle(Color.orange)
+                    .padding(.horizontal, 8)
+                    .frame(height: 20)
+                }
+                .buttonStyle(GlassButtonStyle(cornerRadius: 6))
+            }
+
+            Divider()
+                .padding(.vertical, 1)
+
+            settingToggleRow(
+                title: state.l10n.updateAutoCheck,
+                icon: "sparkles",
+                isOn: $state.autoCheckUpdatesEnabled
+            )
+        }
+        .padding(.horizontal, 11)
+        .padding(.vertical, 8)
+        .glassCard(cornerRadius: 10)
     }
 
     private func settingToggleRow(
