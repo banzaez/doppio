@@ -47,7 +47,7 @@ struct SettingsView: View {
             // Стеклянная панель переключения вкладок macOS 27 Liquid Glass
             glassTabBar
 
-            // Содержимое выбранной вкладки с динамическим замером высоты
+            // Содержимое выбранной вкладки
             VStack(alignment: .leading, spacing: 8) {
                 switch selectedTab {
                 case .general:
@@ -62,14 +62,8 @@ struct SettingsView: View {
                     aboutSection
                 }
             }
-            .background(
-                GeometryReader { proxy in
-                    Color.clear.preference(
-                        key: SettingsContentHeightKey.self,
-                        value: proxy.size.height
-                    )
-                }
-            )
+
+            Spacer(minLength: 0)
         }
     }
 
@@ -563,7 +557,7 @@ struct SettingsView: View {
 
     private var aboutSection: some View {
         let version = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.4.0"
-        return VStack(spacing: 12) {
+        return VStack(spacing: 10) {
             VStack(spacing: 6) {
                 Image(systemName: "cup.and.saucer.fill")
                     .font(.system(size: 36))
@@ -580,7 +574,22 @@ struct SettingsView: View {
             }
             .frame(maxWidth: .infinity)
             .padding(.vertical, 14)
-            .glassCard(cornerRadius: 8)
+            .glassCard(cornerRadius: 10)
+
+            if let url = URL(string: "https://github.com/banzaez/doppio") {
+                Link(destination: url) {
+                    HStack(spacing: 6) {
+                        Image(systemName: "link")
+                            .font(.system(size: 10.5))
+                        Text("GitHub • banzaez/doppio")
+                            .font(.system(size: 10.5, weight: .medium))
+                    }
+                    .foregroundStyle(Color.primary.opacity(0.85))
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 26)
+                }
+                .buttonStyle(GlassButtonStyle(cornerRadius: 7))
+            }
 
             Button {
                 state.quitApplication()
