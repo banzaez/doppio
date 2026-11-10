@@ -49,19 +49,21 @@ struct DoppioMenuView: View {
                 ? state.l10n.statusRemaining(state.formattedRemainingTime)
                 : state.l10n.statusAwakeIndefinitely
 
-            Text("☕️ Doppio: \(subtitle)")
+            Label("Doppio: \(subtitle)", systemImage: "cup.and.saucer.fill")
 
             if let triggerName = state.activeTriggerSource.badgeTitle(using: state.l10n) {
-                Text("   ⚡️ \(triggerName)")
+                Label(triggerName, systemImage: "bolt.fill")
             }
 
-            Button(state.l10n.menuDeactivate) {
+            Button {
                 state.deactivate(reason: .userDisabled)
+            } label: {
+                Label(state.l10n.menuDeactivate, systemImage: "stop.circle")
             }
 
             // Быстрое продление активной сессии
             if state.remainingSeconds != nil {
-                Menu(state.l10n.menuExtend) {
+                Menu {
                     Button("+15 \(state.l10n.minuteSuffix)") {
                         state.extendSession(by: 15 * 60)
                     }
@@ -75,22 +77,28 @@ struct DoppioMenuView: View {
                     Button(state.l10n.menuMakeIndefinite) {
                         state.activate(preset: .indefinite)
                     }
+                } label: {
+                    Label(state.l10n.menuExtend, systemImage: "clock.badge.plus")
                 }
             } else {
-                Button("⏱ \(state.l10n.presetMinutes(15))") {
+                Button {
                     state.customMinutes = 15
                     state.activate(preset: .custom)
+                } label: {
+                    Label(state.l10n.presetMinutes(15), systemImage: "timer")
                 }
             }
         } else {
-            Text("💤 " + state.l10n.statusSleepAllowed)
+            Label(state.l10n.statusSleepAllowed, systemImage: "moon.zzz")
 
             if let reason = state.localizedDeactivationReason {
-                Text("   ℹ️ \(reason)")
+                Label(reason, systemImage: "info.circle")
             }
 
-            Button("\(state.l10n.menuActivate) (\(state.selectedPreset.title(using: state.l10n)))") {
+            Button {
                 state.activate(preset: state.selectedPreset)
+            } label: {
+                Label("\(state.l10n.menuActivate) (\(state.selectedPreset.title(using: state.l10n)))", systemImage: "play.circle")
             }
         }
     }
@@ -111,7 +119,7 @@ struct DoppioMenuView: View {
             ))
         }
 
-        Menu("\(state.l10n.presetCustom) (\(state.customMinutes) \(state.l10n.minuteSuffix))...") {
+        Menu {
             Toggle("\(state.l10n.menuActivate) (\(state.customMinutes) \(state.l10n.minuteSuffix))", isOn: Binding(
                 get: { state.isActive && state.selectedPreset == .custom },
                 set: { shouldBeActive in
@@ -146,38 +154,42 @@ struct DoppioMenuView: View {
                 state.customMinutes = max(1, state.customMinutes - 15)
                 state.activate(preset: .custom)
             }
+        } label: {
+            Label("\(state.l10n.presetCustom) (\(state.customMinutes) \(state.l10n.minuteSuffix))...", systemImage: "slider.horizontal.3")
         }
     }
 
     @ViewBuilder
     private var modeAndAppearanceSection: some View {
-        Menu("\(state.l10n.sectionMode): \(state.assertionType.title(using: state.l10n))") {
+        Menu {
             ForEach(SleepAssertionType.allCases, id: \.self) { type in
                 Toggle(type.title(using: state.l10n), isOn: Binding(
                     get: { state.assertionType == type },
                     set: { _ in state.assertionType = type }
                 ))
             }
+        } label: {
+            Label("\(state.l10n.sectionMode): \(state.assertionType.title(using: state.l10n))", systemImage: "display")
         }
 
-        Menu("\(state.l10n.menuBarStyleTitle): \(state.menuBarDisplayStyle.title(using: state.l10n))") {
+        Menu {
             ForEach(MenuBarDisplayStyle.allCases) { style in
                 Toggle(style.title(using: state.l10n), isOn: Binding(
                     get: { state.menuBarDisplayStyle == style },
                     set: { _ in state.menuBarDisplayStyle = style }
                 ))
             }
+        } label: {
+            Label("\(state.l10n.menuBarStyleTitle): \(state.menuBarDisplayStyle.title(using: state.l10n))", systemImage: "menubar.rectangle")
         }
     }
 
     @ViewBuilder
     private var smartTriggersAndBatterySection: some View {
         let isTriggerActive = state.appTriggersEnabled || state.activateOnACPower || state.activateOnExternalDisplay
-        let triggersTitle = isTriggerActive
-            ? "\(state.l10n.settingsSmartTriggersSection) (⚡️)"
-            : state.l10n.settingsSmartTriggersSection
+        let triggersTitle = state.l10n.settingsSmartTriggersSection
 
-        Menu(triggersTitle) {
+        Menu {
             Toggle(state.l10n.settingsAppTriggers, isOn: $state.appTriggersEnabled)
 
             if state.appTriggersEnabled {
@@ -188,11 +200,10 @@ struct DoppioMenuView: View {
                 } else {
                     ForEach(state.targetApps) { app in
                         let isRunning = state.isTargetAppRunning(app)
-                        HStack {
-                            Text((isRunning ? "🟢 " : "⚪️ ") + app.displayName)
-                            if isRunning {
-                                Text("(\(state.l10n.menuRunning))")
-                            }
+                        Label {
+                            Text(app.displayName + (isRunning ? " (\(state.l10n.menuRunning))" : ""))
+                        } icon: {
+                            Image(systemName: isRunning ? "circle.fill" : "circle")
                         }
                     }
                 }
@@ -201,12 +212,14 @@ struct DoppioMenuView: View {
 
                 let candidates = state.candidateRunningApps()
                 if !candidates.isEmpty {
-                    Menu(state.l10n.menuAddRunningApp) {
+                    Menu {
                         ForEach(candidates) { app in
                             Button(app.displayName) {
                                 state.addTargetApp(app)
                             }
                         }
+                    } label: {
+                        Label(state.l10n.menuAddRunningApp, systemImage: "plus.app")
                     }
                 }
             }
@@ -219,6 +232,8 @@ struct DoppioMenuView: View {
             }
 
             Toggle(state.l10n.settingsExternalDisplayTrigger, isOn: $state.activateOnExternalDisplay)
+        } label: {
+            Label(triggersTitle, systemImage: isTriggerActive ? "bolt.badge.automatic.fill" : "bolt.badge.automatic")
         }
 
         if state.batteryInfo != nil {
@@ -226,7 +241,7 @@ struct DoppioMenuView: View {
                 ? "\(state.l10n.settingsBatteryProtection): \(state.batteryThreshold)%"
                 : "\(state.l10n.settingsBatteryProtection): Выкл"
 
-            Menu(thresholdTitle) {
+            Menu {
                 Toggle(state.l10n.settingsBatteryProtection, isOn: $state.batteryProtectionEnabled)
 
                 Divider()
@@ -237,6 +252,8 @@ struct DoppioMenuView: View {
                         set: { _ in state.batteryThreshold = pct }
                     ))
                 }
+            } label: {
+                Label(thresholdTitle, systemImage: state.batteryProtectionEnabled ? "shield.fill" : "shield")
             }
         }
     }
@@ -244,23 +261,30 @@ struct DoppioMenuView: View {
     @ViewBuilder
     private var systemActionsSection: some View {
         if let info = state.batteryInfo {
-            Text("🔋 " + info.description(using: state.l10n))
+            let iconName = info.isPluggedIn ? "battery.100.bolt" : "battery.75"
+            Label(info.description(using: state.l10n), systemImage: iconName)
         }
 
-        Toggle(state.l10n.settingsLaunchAtLogin, isOn: Binding(
+        Toggle(isOn: Binding(
             get: { state.isLaunchAtLogin },
             set: { _ in state.toggleLaunchAtLogin() }
-        ))
+        )) {
+            Label(state.l10n.settingsLaunchAtLogin, systemImage: "arrow.clockwise")
+        }
 
-        Button(state.l10n.settingsTitle + "...") {
+        Button {
             SettingsWindowManager.shared.show(state: state)
+        } label: {
+            Label(state.l10n.settingsTitle + "...", systemImage: "gearshape")
         }
         .keyboardShortcut(",", modifiers: .command)
 
         Divider()
 
-        Button(state.l10n.quitButton) {
+        Button {
             state.quitApplication()
+        } label: {
+            Label(state.l10n.quitButton, systemImage: "power")
         }
         .keyboardShortcut("q", modifiers: .command)
     }
