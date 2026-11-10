@@ -23,9 +23,9 @@ struct VisualEffectBackground: NSViewRepresentable {
     }
 }
 
-/// Стиль карточки в стандартах Apple macOS Control Center (системное полупрозрачное стекло)
+/// Стиль карточки в стандартах Apple macOS Control Center (системное полупрозрачное стекло Liquid Glass)
 struct GlassCardModifier: ViewModifier {
-    var cornerRadius: CGFloat = 8
+    var cornerRadius: CGFloat = 10
     var isSelected: Bool = false
     var isAccent: Bool = false
 
@@ -43,8 +43,18 @@ struct GlassCardModifier: ViewModifier {
                 RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
                     .stroke(
                         isSelected && isAccent
-                            ? Color.orange.opacity(0.45)
-                            : Color.primary.opacity(0.08),
+                            ? AnyShapeStyle(Color.orange.opacity(0.45))
+                            : AnyShapeStyle(
+                                LinearGradient(
+                                    colors: [
+                                        Color.white.opacity(0.22),
+                                        Color.white.opacity(0.06),
+                                        Color.primary.opacity(0.06)
+                                    ],
+                                    startPoint: .top,
+                                    endPoint: .bottom
+                                )
+                            ),
                         lineWidth: 0.5
                     )
                     .allowsHitTesting(false)
@@ -95,7 +105,7 @@ struct GlassCapsuleModifier: ViewModifier {
 }
 
 extension View {
-    func glassCard(cornerRadius: CGFloat = 8, isSelected: Bool = false, isAccent: Bool = false) -> some View {
+    func glassCard(cornerRadius: CGFloat = 10, isSelected: Bool = false, isAccent: Bool = false) -> some View {
         modifier(GlassCardModifier(cornerRadius: cornerRadius, isSelected: isSelected, isAccent: isAccent))
     }
 

@@ -34,6 +34,7 @@ struct SettingsView: View {
     var onBack: (() -> Void)? = nil
 
     @State private var selectedTab: SettingsTab = .general
+    @Namespace private var tabNamespace
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
@@ -43,15 +44,8 @@ struct SettingsView: View {
                     .padding(.bottom, 2)
             }
 
-            // Нативные вкладки настроек macOS
-            Picker("", selection: $selectedTab) {
-                ForEach(SettingsTab.allCases) { tab in
-                    Label(tab.title(using: state.l10n), systemImage: tab.icon)
-                        .tag(tab)
-                }
-            }
-            .pickerStyle(.segmented)
-            .labelsHidden()
+            // Стеклянная панель переключения вкладок macOS 27 Liquid Glass
+            glassTabBar
 
             // Содержимое выбранной вкладки
             switch selectedTab {
@@ -69,6 +63,64 @@ struct SettingsView: View {
 
             Spacer(minLength: 0)
         }
+    }
+
+    private var glassTabBar: some View {
+        HStack(spacing: 4) {
+            ForEach(SettingsTab.allCases) { tab in
+                let isSelected = selectedTab == tab
+
+                Button {
+                    withAnimation(.spring(response: 0.28, dampingFraction: 0.78)) {
+                        selectedTab = tab
+                    }
+                } label: {
+                    HStack(spacing: 5) {
+                        Image(systemName: tab.icon)
+                            .font(.system(size: 10.5))
+                        Text(tab.title(using: state.l10n))
+                            .font(.system(size: 11, weight: isSelected ? .semibold : .medium))
+                            .lineLimit(1)
+                    }
+                    .foregroundStyle(isSelected ? Color.primary : Color.secondary)
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 26)
+                    .contentShape(Rectangle())
+                    .background {
+                        if isSelected {
+                            RoundedRectangle(cornerRadius: 7, style: .continuous)
+                                .fill(Color.primary.opacity(0.10))
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 7, style: .continuous)
+                                        .stroke(
+                                            LinearGradient(
+                                                colors: [
+                                                    Color.white.opacity(0.28),
+                                                    Color.white.opacity(0.08)
+                                                ],
+                                                startPoint: .top,
+                                                endPoint: .bottom
+                                            ),
+                                            lineWidth: 0.5
+                                        )
+                                )
+                                .shadow(color: Color.black.opacity(0.06), radius: 3, y: 1)
+                                .matchedGeometryEffect(id: "SelectedSettingsTab", in: tabNamespace)
+                        }
+                    }
+                }
+                .buttonStyle(.plain)
+            }
+        }
+        .padding(3)
+        .background(
+            RoundedRectangle(cornerRadius: 9, style: .continuous)
+                .fill(Color.primary.opacity(0.04))
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 9, style: .continuous)
+                .stroke(Color.primary.opacity(0.06), lineWidth: 0.5)
+        )
     }
 
     // MARK: - Секции интерфейса
