@@ -676,4 +676,38 @@ public struct L10n: Sendable {
         default:   return "Display"
         }
     }
+
+    // MARK: - Системное меню macOS (NSMenu)
+    public var menuActivate: String {
+        switch code {
+        case "uk": return "Увімкнути"
+        case "ru": return "Включить"
+        case "de": return "Aktivieren"
+        case "fr": return "Activer"
+        case "es": return "Activar"
+        default:   return "Activate"
+        }
+    }
+
+    public var menuDeactivate: String {
+        switch code {
+        case "uk": return "Вимкнути"
+        case "ru": return "Выключить"
+        case "de": return "Deaktivieren"
+        case "fr": return "Désactiver"
+        case "es": return "Desactivar"
+        default:   return "Deactivate"
+        }
+    }
+
+    public var menuPresetsHeader: String {
+        switch code {
+        case "uk": return "Тривалість"
+        case "ru": return "Длительность"
+        case "de": return "Dauer"
+        case "fr": return "Durée"
+        case "es": return "Duración"
+        default:   return "Duration"
+        }
+    }
 }

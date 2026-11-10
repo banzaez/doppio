@@ -1,8 +1,31 @@
 import SwiftUI
+import AppKit
 
-/// Стиль стеклянной карточки (Liquid Glass / Material) в стандартах macOS 27 / iOS 2026
+/// Нативная подложка системного стекла macOS (NSVisualEffectView с размытием фона за окном)
+struct VisualEffectBackground: NSViewRepresentable {
+    var material: NSVisualEffectView.Material = .popover
+    var blendingMode: NSVisualEffectView.BlendingMode = .behindWindow
+    var state: NSVisualEffectView.State = .active
+
+    func makeNSView(context: Context) -> NSVisualEffectView {
+        let view = NSVisualEffectView()
+        view.material = material
+        view.blendingMode = blendingMode
+        view.state = state
+        view.wantsLayer = true
+        return view
+    }
+
+    func updateNSView(_ nsView: NSVisualEffectView, context: Context) {
+        nsView.material = material
+        nsView.blendingMode = blendingMode
+        nsView.state = state
+    }
+}
+
+/// Стиль карточки в стандартах Apple macOS Control Center (системное полупрозрачное стекло)
 struct GlassCardModifier: ViewModifier {
-    var cornerRadius: CGFloat = 14
+    var cornerRadius: CGFloat = 12
     var isSelected: Bool = false
     var isAccent: Bool = false
 
@@ -13,89 +36,42 @@ struct GlassCardModifier: ViewModifier {
                     .fill(
                         isSelected && isAccent
                             ? Color.orange.opacity(0.14)
-                            : Color.primary.opacity(0.04)
-                    )
-                    .background(
-                        RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
-                            .fill(.ultraThinMaterial)
+                            : Color.primary.opacity(0.045)
                     )
             )
             .overlay(
-                // Верхний блик стекла (Specular Sheen)
-                RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
-                    .fill(
-                        LinearGradient(
-                            stops: [
-                                .init(color: Color.white.opacity(0.08), location: 0),
-                                .init(color: Color.white.opacity(0.02), location: 0.35),
-                                .init(color: Color.clear, location: 0.6)
-                            ],
-                            startPoint: .top,
-                            endPoint: .bottom
-                        )
-                    )
-                    .allowsHitTesting(false)
-            )
-            .overlay(
-                // Тонкая оптическая кромка стекла с преломлением
                 RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
                     .stroke(
                         isSelected && isAccent
-                            ? LinearGradient(
-                                colors: [
-                                    Color.orange.opacity(0.80),
-                                    Color.orange.opacity(0.35)
-                                ],
-                                startPoint: .topLeading,
-                                endPoint: .bottomTrailing
-                            )
-                            : LinearGradient(
-                                colors: [
-                                    Color.white.opacity(0.24),
-                                    Color.white.opacity(0.08),
-                                    Color.black.opacity(0.03)
-                                ],
-                                startPoint: .topLeading,
-                                endPoint: .bottomTrailing
-                            ),
-                        lineWidth: 0.75
+                            ? Color.orange.opacity(0.45)
+                            : Color.primary.opacity(0.08),
+                        lineWidth: 0.5
                     )
                     .allowsHitTesting(false)
-            )
-            .shadow(
-                color: isSelected && isAccent
-                    ? Color.orange.opacity(0.18)
-                    : Color.black.opacity(0.03),
-                radius: isSelected && isAccent ? 8 : 4,
-                y: 1.5
             )
     }
 }
 
-/// Стеклянная подложка-трек для сегментированных переключателей
+/// Стеклянная подложка-трек для сегментированных переключателей в стиле macOS Control Center
 struct GlassSegmentTrackModifier: ViewModifier {
-    var cornerRadius: CGFloat = 10
+    var cornerRadius: CGFloat = 8
 
     func body(content: Content) -> some View {
         content
-            .padding(3)
+            .padding(2.5)
             .background(
                 RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
-                    .fill(Color.primary.opacity(0.04))
-                    .background(
-                        RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
-                            .fill(.ultraThinMaterial)
-                    )
+                    .fill(Color.primary.opacity(0.05))
             )
             .overlay(
                 RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
-                    .stroke(Color.primary.opacity(0.07), lineWidth: 0.75)
+                    .stroke(Color.primary.opacity(0.08), lineWidth: 0.5)
                     .allowsHitTesting(false)
             )
     }
 }
 
-/// Стеклянный стиль для капсульных бейджей
+/// Системный стеклянный стиль для капсульных бейджей
 struct GlassCapsuleModifier: ViewModifier {
     var isAccent: Bool = false
 
@@ -103,19 +79,15 @@ struct GlassCapsuleModifier: ViewModifier {
         content
             .background(
                 Capsule(style: .continuous)
-                    .fill(isAccent ? Color.orange.opacity(0.14) : Color.primary.opacity(0.05))
-                    .background(
-                        Capsule(style: .continuous)
-                            .fill(.ultraThinMaterial)
-                    )
+                    .fill(isAccent ? Color.orange.opacity(0.15) : Color.primary.opacity(0.05))
             )
             .overlay(
                 Capsule(style: .continuous)
                     .stroke(
                         isAccent
-                            ? Color.orange.opacity(0.40)
-                            : Color.white.opacity(0.20),
-                        lineWidth: 0.75
+                            ? Color.orange.opacity(0.35)
+                            : Color.primary.opacity(0.09),
+                        lineWidth: 0.5
                     )
                     .allowsHitTesting(false)
             )
@@ -123,11 +95,11 @@ struct GlassCapsuleModifier: ViewModifier {
 }
 
 extension View {
-    func glassCard(cornerRadius: CGFloat = 14, isSelected: Bool = false, isAccent: Bool = false) -> some View {
+    func glassCard(cornerRadius: CGFloat = 12, isSelected: Bool = false, isAccent: Bool = false) -> some View {
         modifier(GlassCardModifier(cornerRadius: cornerRadius, isSelected: isSelected, isAccent: isAccent))
     }
 
-    func glassSegmentTrack(cornerRadius: CGFloat = 10) -> some View {
+    func glassSegmentTrack(cornerRadius: CGFloat = 8) -> some View {
         modifier(GlassSegmentTrackModifier(cornerRadius: cornerRadius))
     }
 
@@ -136,11 +108,11 @@ extension View {
     }
 }
 
-/// Стеклянный стиль для интерактивных кнопок с поддержкой Hover и Spring-анимации
+/// Стеклянный стиль для интерактивных кнопок в стиле macOS с поддержкой Hover и нажатия
 struct GlassButtonStyle: ButtonStyle {
     var isSelected: Bool = false
     var isAccent: Bool = false
-    var cornerRadius: CGFloat = 10
+    var cornerRadius: CGFloat = 8
 
     func makeBody(configuration: Configuration) -> some View {
         GlassButtonBody(
@@ -162,43 +134,30 @@ struct GlassButtonStyle: ButtonStyle {
         var body: some View {
             configuration.label
                 .background(
-                    ZStack {
-                        RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
-                            .fill(
-                                isSelected
-                                    ? (isAccent
-                                       ? Color.orange.opacity(isHovered ? 0.24 : 0.18)
-                                       : Color.primary.opacity(isHovered ? 0.14 : 0.10))
-                                    : Color.primary.opacity(
-                                        configuration.isPressed
-                                            ? 0.12
-                                            : (isHovered ? 0.08 : 0.045)
-                                    )
-                            )
-
-                        // Верхний световой блик кнопки (внутри фона, не перекрывает текст)
-                        RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
-                            .fill(
-                                LinearGradient(
-                                    colors: [
-                                        Color.white.opacity(isHovered ? 0.12 : 0.06),
-                                        Color.clear
-                                    ],
-                                    startPoint: .top,
-                                    endPoint: .center
+                    RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
+                        .fill(
+                            isSelected
+                                ? (isAccent
+                                   ? Color.orange.opacity(isHovered ? 0.22 : 0.16)
+                                   : Color.primary.opacity(isHovered ? 0.14 : 0.10))
+                                : Color.primary.opacity(
+                                    configuration.isPressed
+                                        ? 0.12
+                                        : (isHovered ? 0.08 : 0.04)
                                 )
-                            )
-
-                        RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
-                            .stroke(
-                                isSelected
-                                    ? (isAccent
-                                       ? Color.orange.opacity(isHovered ? 0.70 : 0.55)
-                                       : Color.primary.opacity(isHovered ? 0.30 : 0.20))
-                                    : Color.primary.opacity(isHovered ? 0.15 : 0.08),
-                                lineWidth: 0.75
-                            )
-                    }
+                        )
+                )
+                .overlay(
+                    RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
+                        .stroke(
+                            isSelected
+                                ? (isAccent
+                                   ? Color.orange.opacity(isHovered ? 0.60 : 0.45)
+                                   : Color.primary.opacity(isHovered ? 0.22 : 0.15))
+                                : Color.primary.opacity(isHovered ? 0.12 : 0.07),
+                            lineWidth: 0.5
+                        )
+                        .allowsHitTesting(false)
                 )
                 .opacity(configuration.isPressed ? 0.85 : 1.0)
                 .animation(.easeOut(duration: 0.12), value: isHovered)

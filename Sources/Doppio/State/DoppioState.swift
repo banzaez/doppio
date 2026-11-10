@@ -46,6 +46,18 @@ public final class DoppioState {
         }
     }
 
+    // MARK: - Навигация поповера
+    public enum PopoverScreen: Equatable {
+        case main
+        case settings
+    }
+
+    public var currentScreen: PopoverScreen = .main
+
+    public func resetToMainScreen() {
+        self.currentScreen = .main
+    }
+
     // MARK: - Настройки строки меню и быстрых действий
     public var menuBarDisplayStyle: MenuBarDisplayStyle {
         didSet {

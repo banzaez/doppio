@@ -48,8 +48,8 @@ struct SleepModeSelectorView: View {
                                             .stroke(
                                                 state.isActive
                                                     ? Color.orange.opacity(0.55)
-                                                    : Color.white.opacity(0.22),
-                                                lineWidth: 0.75
+                                                    : Color.primary.opacity(0.12),
+                                                lineWidth: 0.5
                                             )
                                     )
                                     .shadow(

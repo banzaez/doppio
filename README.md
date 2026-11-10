@@ -6,6 +6,11 @@
 
 ## ✨ Ключевые возможности
 
+- 🪟 **Нативное системное стекло Control Center (Liquid Glass)**:
+  - Фоновая подложка окна на базе системного `NSVisualEffectView` (материал `.popover`, `blendingMode = .behindWindow`) со сквозным размытием обоев и окон рабочего стола.
+  - Нативная динамическая тень `NSWindow` с точным скруглением углов.
+  - Утончённые полупрозрачные карточки Apple HIG без искусственных бликов и жестких рамок.
+  - Автоматический возврат на главный экран при закрытии меню: слушатели `NSWindow.didResignKeyNotification` и `didChangeOcclusionStateNotification` гарантируют открытие на главном экране.
 - ⚡️ **Быстрое переключение и открытие в один клик**:
   - **Левый и правый клик** по иконке в строке меню: полноценное открытие и закрытие всплывающего окна (на базе `NSSceneStatusItem`).
   - **Быстрый ⌥-клик (Headless Toggle)**: Option-клик по иконке мгновенно переключает бодрствование без открытия поповера.
@@ -131,8 +136,7 @@ doppio/
 │               ├── FooterActionsView.swift        # Нижняя панель навигации и индикатор заряда
 │               ├── GlassStyles.swift              # Модификаторы и стили Liquid Glass 2026
 │               ├── ModelPresentation.swift        # Презентационные расширения доменных моделей
-│               ├── WindowAutoResizer.swift        # Адаптивное управление высотой окна
-│               └── StatusItemFrameTrackerView.swift # Отслеживание координат иконки статус-бара
+│               └── WindowAutoResizer.swift        # Адаптивное управление высотой окна
 └── Tests/
     └── DoppioTests/
         └── DoppioTests.swift # Тесты Swift Testing

@@ -4,30 +4,31 @@ import SwiftUI
 struct DoppioPopoverView: View {
     @Bindable var state: DoppioState
 
-    enum Screen {
-        case main
-        case settings
-    }
-
-    @State private var currentScreen: Screen = .main
-
     var body: some View {
         VStack(spacing: 0) {
-            switch currentScreen {
+            switch state.currentScreen {
             case .main:
                 mainScreenView
                     .transition(.opacity)
             case .settings:
                 SettingsView(state: state) {
                     withAnimation(.easeInOut(duration: 0.18)) {
-                        currentScreen = .main
+                        state.currentScreen = .main
                     }
                 }
                 .transition(.opacity)
             }
         }
-        .padding(13)
+        .padding(12)
         .frame(width: 320)
+        .background(
+            VisualEffectBackground(material: .popover, blendingMode: .behindWindow)
+                .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 16, style: .continuous)
+                        .stroke(Color.primary.opacity(0.12), lineWidth: 0.5)
+                )
+        )
         .background(
             GeometryReader { proxy in
                 Color.clear.preference(
@@ -43,12 +44,21 @@ struct DoppioPopoverView: View {
         }
         .fixedSize(horizontal: false, vertical: true)
         .background(WindowAutoResizer())
-        .onAppear {
-            state.isPopoverVisible = true
-            state.refreshBatteryInfo()
+        .onAppear { [weak state] in
+            state?.isPopoverVisible = true
+            state?.refreshBatteryInfo()
+            WindowAutoResizerBridge.shared.onWindowClosed = { [weak state] in
+                state?.isPopoverVisible = false
+                state?.resetToMainScreen()
+            }
+            WindowAutoResizerBridge.shared.onWindowOpened = { [weak state] in
+                state?.isPopoverVisible = true
+                state?.refreshBatteryInfo()
+            }
         }
         .onDisappear {
             state.isPopoverVisible = false
+            state.resetToMainScreen()
         }
     }
 
@@ -75,7 +85,7 @@ struct DoppioPopoverView: View {
             // Нижняя строка действий
             FooterActionsView(state: state) {
                 withAnimation(.easeInOut(duration: 0.18)) {
-                    currentScreen = .settings
+                    state.currentScreen = .settings
                 }
             }
         }

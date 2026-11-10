@@ -1,7 +1,7 @@
 import SwiftUI
 import AppKit
 
-/// Точка входа в приложение Doppio (SwiftUI 2026 App Lifecycle)
+/// Точка входа в приложение Doppio (SwiftUI App Lifecycle)
 @main
 struct DoppioApp: App {
     @State private var state = DoppioState()

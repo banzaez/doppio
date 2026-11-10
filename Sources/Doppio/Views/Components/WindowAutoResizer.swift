@@ -19,14 +19,73 @@ final class WindowAutoResizerBridge {
 
     private weak var currentWindow: NSWindow?
     private var lastTargetHeight: CGFloat = 0
+    private var notificationTokens: [NSObjectProtocol] = []
+
+    var onWindowClosed: (@MainActor () -> Void)?
+    var onWindowOpened: (@MainActor () -> Void)?
 
     private init() {}
 
     func register(window: NSWindow) {
+        if self.currentWindow === window {
+            return
+        }
+        removeObservers()
         self.currentWindow = window
+        window.isOpaque = false
+        window.backgroundColor = .clear
+        window.hasShadow = true
+        window.invalidateShadow()
+
+        let center = NotificationCenter.default
+
+        let resignToken = center.addObserver(
+            forName: NSWindow.didResignKeyNotification,
+            object: window,
+            queue: .main
+        ) { [weak self] _ in
+            MainActor.assumeIsolated {
+                self?.onWindowClosed?()
+            }
+        }
+
+        let occlusionToken = center.addObserver(
+            forName: NSWindow.didChangeOcclusionStateNotification,
+            object: window,
+            queue: .main
+        ) { [weak self, weak window] _ in
+            MainActor.assumeIsolated {
+                guard let window = window else { return }
+                if !window.occlusionState.contains(.visible) {
+                    self?.onWindowClosed?()
+                } else if window.isKeyWindow {
+                    self?.onWindowOpened?()
+                }
+            }
+        }
+
+        let becomeKeyToken = center.addObserver(
+            forName: NSWindow.didBecomeKeyNotification,
+            object: window,
+            queue: .main
+        ) { [weak self] _ in
+            MainActor.assumeIsolated {
+                self?.onWindowOpened?()
+            }
+        }
+
+        notificationTokens = [resignToken, occlusionToken, becomeKeyToken]
+
         if lastTargetHeight > 80 {
             applyResize(toHeight: lastTargetHeight, animated: false)
         }
+    }
+
+    private func removeObservers() {
+        for token in notificationTokens {
+            NotificationCenter.default.removeObserver(token)
+        }
+        notificationTokens.removeAll()
     }
 
     func resizeWindow(toHeight targetHeight: CGFloat) {
@@ -37,6 +96,7 @@ final class WindowAutoResizerBridge {
     }
 
     func closeWindow() {
+        onWindowClosed?()
         if let window = currentWindow {
             window.orderOut(nil)
         } else {
@@ -66,13 +126,18 @@ final class WindowAutoResizerBridge {
         newFrame.size.width = 320
 
         if animated && window.isVisible {
-            NSAnimationContext.runAnimationGroup { context in
+            NSAnimationContext.runAnimationGroup({ context in
                 context.duration = 0.18
                 context.timingFunction = CAMediaTimingFunction(name: .easeInEaseOut)
                 window.animator().setFrame(newFrame, display: true)
-            }
+            }, completionHandler: {
+                MainActor.assumeIsolated {
+                    window.invalidateShadow()
+                }
+            })
         } else {
             window.setFrame(newFrame, display: true)
+            window.invalidateShadow()
         }
     }
 }

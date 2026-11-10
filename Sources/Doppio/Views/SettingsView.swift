@@ -8,9 +8,10 @@ struct SettingsView: View {
     let onBack: () -> Void
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 6) {
+        VStack(alignment: .leading, spacing: 9) {
             // Заголовок с идеально центрированным названием и кнопкой Назад
             headerView
+                .padding(.bottom, 2)
 
             // Блок 1: Основные параметры (Язык интерфейса и Запуск при входе)
             generalSection
@@ -26,6 +27,7 @@ struct SettingsView: View {
 
             // Блок 5: Выход из приложения и версия
             bottomFooterSection
+                .padding(.top, 2)
         }
     }
 
@@ -60,7 +62,7 @@ struct SettingsView: View {
     }
 
     private var generalSection: some View {
-        VStack(spacing: 5) {
+        VStack(spacing: 7) {
             // Язык интерфейса
             HStack(spacing: 8) {
                 Image(systemName: "globe")
@@ -98,10 +100,10 @@ struct SettingsView: View {
                 .menuStyle(.borderlessButton)
                 .buttonStyle(GlassButtonStyle(cornerRadius: 6))
             }
-            .frame(height: 20)
+            .frame(height: 22)
 
             Divider()
-                .padding(.horizontal, 2)
+                .padding(.vertical, 1)
 
             // Запуск при входе в систему
             settingToggleRow(
@@ -113,13 +115,13 @@ struct SettingsView: View {
                 )
             )
         }
-        .padding(.horizontal, 9)
-        .padding(.vertical, 7)
+        .padding(.horizontal, 11)
+        .padding(.vertical, 9)
         .glassCard(cornerRadius: 11)
     }
 
     private var menuBarSection: some View {
-        VStack(alignment: .leading, spacing: 5) {
+        VStack(alignment: .leading, spacing: 7) {
             // Заголовок и переключатель стилей в компактном блоке
             HStack(spacing: 6) {
                 Image(systemName: "menubar.rectangle")
@@ -157,9 +159,10 @@ struct SettingsView: View {
                 }
             }
             .help(state.l10n.menuBarStyleDesc)
+            .padding(.top, 1)
 
             Divider()
-                .padding(.horizontal, 2)
+                .padding(.vertical, 1)
 
             // Быстрый клик (Option / Right Click)
             settingToggleRow(
@@ -170,7 +173,7 @@ struct SettingsView: View {
             )
 
             Divider()
-                .padding(.horizontal, 2)
+                .padding(.vertical, 1)
 
             // Уведомление за 1 минуту до сна с продлением
             settingToggleRow(
@@ -179,13 +182,13 @@ struct SettingsView: View {
                 isOn: $state.notifyBeforeExpiry
             )
         }
-        .padding(.horizontal, 9)
-        .padding(.vertical, 7)
+        .padding(.horizontal, 11)
+        .padding(.vertical, 9)
         .glassCard(cornerRadius: 11)
     }
 
     private var smartTriggersSection: some View {
-        VStack(alignment: .leading, spacing: 5) {
+        VStack(alignment: .leading, spacing: 7) {
             HStack(spacing: 6) {
                 Image(systemName: "bolt.badge.automatic")
                     .font(.system(size: 11, weight: .semibold))
@@ -219,7 +222,7 @@ struct SettingsView: View {
                             .font(.system(size: 9.5, weight: .regular))
                             .foregroundStyle(Color.secondary.opacity(0.75))
                             .padding(.leading, 23)
-                            .frame(height: 16)
+                            .frame(height: 18)
                     } else if state.targetApps.count <= 3 {
                         targetAppsRows
                             .padding(.leading, 23)
@@ -232,10 +235,11 @@ struct SettingsView: View {
                         .padding(.leading, 23)
                     }
                 }
+                .padding(.vertical, 1)
             }
 
             Divider()
-                .padding(.horizontal, 2)
+                .padding(.vertical, 1)
 
             // Питание от сети
             if state.batteryInfo != nil {
@@ -252,7 +256,7 @@ struct SettingsView: View {
                 )
 
                 Divider()
-                    .padding(.horizontal, 2)
+                    .padding(.vertical, 1)
             }
 
             // Внешний дисплей
@@ -262,8 +266,8 @@ struct SettingsView: View {
                 isOn: $state.activateOnExternalDisplay
             )
         }
-        .padding(.horizontal, 9)
-        .padding(.vertical, 7)
+        .padding(.horizontal, 11)
+        .padding(.vertical, 9)
         .glassCard(cornerRadius: 11)
     }
 
@@ -351,7 +355,7 @@ struct SettingsView: View {
     private var batterySection: some View {
         Group {
             if state.batteryInfo != nil {
-                VStack(alignment: .leading, spacing: 5) {
+                VStack(alignment: .leading, spacing: 7) {
                     settingToggleRow(
                         title: state.l10n.settingsBatteryProtection,
                         icon: "bolt.shield",
@@ -382,11 +386,11 @@ struct SettingsView: View {
                                 ))
                             }
                         }
-                        .padding(.top, 1)
+                        .padding(.top, 2)
                     }
                 }
-                .padding(.horizontal, 9)
-                .padding(.vertical, 7)
+                .padding(.horizontal, 11)
+                .padding(.vertical, 9)
                 .glassCard(cornerRadius: 11)
             } else {
                 HStack(spacing: 8) {
@@ -403,15 +407,16 @@ struct SettingsView: View {
 
                     Spacer()
                 }
-                .padding(.horizontal, 9)
-                .padding(.vertical, 7)
+                .frame(height: 21)
+                .padding(.horizontal, 11)
+                .padding(.vertical, 9)
                 .glassCard(cornerRadius: 11)
             }
         }
     }
 
     private var bottomFooterSection: some View {
-        let version = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.2.0"
+        let version = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.3.0"
         return HStack(spacing: 10) {
             Text("Doppio v\(version)")
                 .font(.system(size: 10, weight: .medium, design: .rounded))
@@ -436,7 +441,7 @@ struct SettingsView: View {
             }
             .buttonStyle(GlassButtonStyle(cornerRadius: 7))
         }
-        .frame(height: 24)
+        .frame(height: 26)
     }
 
     private func settingToggleRow(
@@ -464,7 +469,7 @@ struct SettingsView: View {
                 .controlSize(.mini)
                 .labelsHidden()
         }
-        .frame(height: 17)
+        .frame(height: 21)
         .help(helpText ?? "")
     }
 
