@@ -556,7 +556,7 @@ struct SettingsView: View {
     }
 
     private var aboutSection: some View {
-        let version = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.4.0"
+        let version = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.5.0"
         return VStack(spacing: 8) {
             // Карточка приложения
             VStack(spacing: 4) {

@@ -586,12 +586,12 @@ struct DoppioTests {
     func updateServiceSemVerAndLocalization() {
         let updater = AppUpdateService()
 
-        #expect(updater.isVersion("1.5.0", greaterThan: "1.4.0"))
-        #expect(updater.isVersion("1.4.1", greaterThan: "1.4.0"))
+        #expect(updater.isVersion("1.6.0", greaterThan: "1.5.0"))
+        #expect(updater.isVersion("1.5.1", greaterThan: "1.5.0"))
         #expect(updater.isVersion("2.0.0", greaterThan: "1.9.9"))
-        #expect(!updater.isVersion("1.4.0", greaterThan: "1.4.0"))
-        #expect(!updater.isVersion("1.3.9", greaterThan: "1.4.0"))
-        #expect(!updater.isVersion("1.4.0", greaterThan: "1.4.1"))
+        #expect(!updater.isVersion("1.5.0", greaterThan: "1.5.0"))
+        #expect(!updater.isVersion("1.4.9", greaterThan: "1.5.0"))
+        #expect(!updater.isVersion("1.5.0", greaterThan: "1.5.1"))
 
         let ru = L10n(language: .russian)
         let en = L10n(language: .english)
@@ -600,6 +600,6 @@ struct DoppioTests {
         #expect(en.menuCheckUpdates == "Check for Updates...")
         #expect(ru.updateAvailableDesc("1.5.0") == "Доступна новая версия Doppio: v1.5.0")
         #expect(en.updateAvailableDesc("1.5.0") == "A new version of Doppio is available: v1.5.0")
-        #expect(ru.updateUpToDateMessage("1.4.0") == "Установлена актуальная версия Doppio v1.4.0.")
+        #expect(ru.updateUpToDateMessage("1.5.0") == "Установлена актуальная версия Doppio v1.5.0.")
     }
 }

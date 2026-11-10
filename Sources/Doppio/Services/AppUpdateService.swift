@@ -27,7 +27,7 @@ public final class AppUpdateService: ObservableObject {
 
     /// Текущая версия приложения
     public var currentVersion: String {
-        Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.4.0"
+        Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.5.0"
     }
 
     /// Проверка обновлений на GitHub
