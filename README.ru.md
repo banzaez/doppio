@@ -2,7 +2,7 @@
   <img src="Assets/AppIcon.png" width="128" height="128" alt="Doppio App Icon" />
 </p>
 
-# Doppio
+<h1 align="center">☕️ Doppio</h1>
 
 <p align="center">
   <b>Современная, эстетичная и энергоэффективная утилита для строки меню macOS, предотвращающая засыпание Mac.</b>

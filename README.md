@@ -2,7 +2,7 @@
   <img src="Assets/AppIcon.png" width="128" height="128" alt="Doppio App Icon" />
 </p>
 
-# Doppio
+<h1 align="center">☕️ Doppio</h1>
 
 <p align="center">
   <b>Modern, lightweight, and battery-conscious keep-awake utility for macOS.</b>
