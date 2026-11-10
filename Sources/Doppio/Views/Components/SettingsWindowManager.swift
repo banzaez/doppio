@@ -22,16 +22,11 @@ public final class SettingsWindowManager {
 
         let window = NSWindow(contentViewController: hostingController)
         window.title = state.l10n.settingsTitle
-        window.styleMask = [.titled, .closable, .miniaturizable, .resizable, .fullSizeContentView]
+        window.styleMask = [.titled, .closable, .miniaturizable]
         window.titlebarAppearsTransparent = true
-        window.titleVisibility = .hidden
-        window.isOpaque = false
-        window.backgroundColor = .clear
-        window.hasShadow = true
         window.isMovableByWindowBackground = true
         window.isReleasedWhenClosed = false
-        window.minSize = NSSize(width: 360, height: 320)
-        window.setContentSize(NSSize(width: 380, height: 390))
+        window.setContentSize(NSSize(width: 360, height: 320))
         window.center()
 
         let controller = NSWindowController(window: window)
@@ -40,9 +35,32 @@ public final class SettingsWindowManager {
         window.makeKeyAndOrderFront(nil)
         NSApp.activate(ignoringOtherApps: true)
     }
+
+    /// Плавная анимация высоты окна под активную вкладку без пустых полей
+    public func adjustWindowHeight(to targetContentHeight: CGFloat) {
+        guard let window = windowController?.window else { return }
+        let currentFrame = window.frame
+        let titlebarHeight = window.frame.height - window.contentLayoutRect.height
+        let targetTotalHeight = max(200, targetContentHeight + titlebarHeight)
+
+        if abs(currentFrame.height - targetTotalHeight) > 3 {
+            let newY = currentFrame.origin.y + (currentFrame.height - targetTotalHeight)
+            let newFrame = NSRect(
+                x: currentFrame.origin.x,
+                y: newY,
+                width: currentFrame.width,
+                height: targetTotalHeight
+            )
+            NSAnimationContext.runAnimationGroup { context in
+                context.duration = 0.22
+                context.timingFunction = CAMediaTimingFunction(name: .easeInEaseOut)
+                window.animator().setFrame(newFrame, display: true)
+            }
+        }
+    }
 }
 
-/// Контейнер экрана настроек для отображения в стиле macOS 27 Liquid Glass
+/// Контейнер экрана настроек для отображения в стиле macOS Liquid Glass
 public struct SettingsWindowContainer: View {
     @Bindable var state: DoppioState
 
@@ -52,51 +70,20 @@ public struct SettingsWindowContainer: View {
 
     public var body: some View {
         ZStack {
-            // Нативное системное стекло Control Center (Liquid Glass) с размытием фона за окном
-            VisualEffectBackground(material: .popover, blendingMode: .behindWindow)
+            // Нативное системное стекло с размытием фона за окном
+            VisualEffectBackground(material: .underWindowBackground, blendingMode: .behindWindow)
                 .ignoresSafeArea()
 
-            // Спекулярный стеклянный градиент по контуру окна macOS 27
-            RoundedRectangle(cornerRadius: 16, style: .continuous)
-                .stroke(
-                    LinearGradient(
-                        colors: [
-                            Color.white.opacity(0.35),
-                            Color.white.opacity(0.12),
-                            Color.primary.opacity(0.08)
-                        ],
-                        startPoint: .topLeading,
-                        endPoint: .bottomTrailing
-                    ),
-                    lineWidth: 0.75
-                )
-                .ignoresSafeArea()
-                .allowsHitTesting(false)
-
-            VStack(spacing: 0) {
-                // Интегрированная стеклянная шапка с заголовком и отступом под светофор кнопок macOS
-                HStack {
-                    Spacer()
-                        .frame(width: 60)
-
-                    Text(state.l10n.settingsTitle)
-                        .font(.system(size: 13, weight: .semibold))
-                        .foregroundStyle(Color.primary)
-                        .lineLimit(1)
-
-                    Spacer()
-                        .frame(width: 60)
-                }
-                .frame(height: 28)
+            SettingsView(state: state, showsHeader: false)
+                .padding(.horizontal, 16)
                 .padding(.top, 8)
-                .padding(.bottom, 6)
-
-                SettingsView(state: state, showsHeader: false)
-                    .padding(.horizontal, 18)
-                    .padding(.bottom, 16)
-            }
+                .padding(.bottom, 14)
         }
-        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
-        .frame(minWidth: 360, minHeight: 320)
+        .frame(width: 360)
+        .onPreferenceChange(SettingsContentHeightKey.self) { newHeight in
+            guard newHeight > 50 else { return }
+            // 8 pt top + 14 pt bottom + 26 pt tab bar + 10 pt spacing = ~58 pt overhead
+            SettingsWindowManager.shared.adjustWindowHeight(to: newHeight + 58)
+        }
     }
 }

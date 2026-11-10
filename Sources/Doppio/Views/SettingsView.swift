@@ -47,21 +47,29 @@ struct SettingsView: View {
             // Стеклянная панель переключения вкладок macOS 27 Liquid Glass
             glassTabBar
 
-            // Содержимое выбранной вкладки
-            switch selectedTab {
-            case .general:
-                generalSection
-                menuBarSection
-            case .automation:
-                smartTriggersSection
-                if state.batteryInfo != nil {
-                    batterySection
+            // Содержимое выбранной вкладки с динамическим замером высоты
+            VStack(alignment: .leading, spacing: 8) {
+                switch selectedTab {
+                case .general:
+                    generalSection
+                    menuBarSection
+                case .automation:
+                    smartTriggersSection
+                    if state.batteryInfo != nil {
+                        batterySection
+                    }
+                case .about:
+                    aboutSection
                 }
-            case .about:
-                aboutSection
             }
-
-            Spacer(minLength: 0)
+            .background(
+                GeometryReader { proxy in
+                    Color.clear.preference(
+                        key: SettingsContentHeightKey.self,
+                        value: proxy.size.height
+                    )
+                }
+            )
         }
     }
 
@@ -635,6 +643,17 @@ struct SettingsView: View {
             withAnimation(.easeInOut(duration: 0.16)) {
                 state.addTargetApp(from: url)
             }
+        }
+    }
+}
+
+/// Ключ предпочтений для измерения высоты контента настроек
+public struct SettingsContentHeightKey: PreferenceKey {
+    public static let defaultValue: CGFloat = 0
+    public static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) {
+        let next = nextValue()
+        if next > 0 {
+            value = next
         }
     }
 }
