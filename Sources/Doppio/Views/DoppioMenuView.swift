@@ -13,7 +13,7 @@ struct DoppioMenuView: View {
         .hours4
     ]
 
-    private let customQuickMinutes = [5, 10, 20, 45, 60, 90, 120, 180]
+    private let customQuickMinutes = [5, 10, 20, 45, 90, 180, 480, 720]
 
     var body: some View {
         // 1. Статус сессии, оставшееся время и быстрое управление
@@ -110,19 +110,6 @@ struct DoppioMenuView: View {
         }
 
         Menu {
-            Toggle("\(state.l10n.menuActivate) (\(state.customMinutes) \(state.l10n.minuteSuffix))", isOn: Binding(
-                get: { state.isActive && state.selectedPreset == .custom },
-                set: { shouldBeActive in
-                    if shouldBeActive {
-                        state.activate(preset: .custom)
-                    } else {
-                        state.deactivate(reason: .userDisabled)
-                    }
-                }
-            ))
-
-            Divider()
-
             ForEach(customQuickMinutes, id: \.self) { mins in
                 Toggle(formattedMinutesTitle(mins), isOn: Binding(
                     get: { state.isActive && state.selectedPreset == .custom && state.customMinutes == mins },
@@ -135,17 +122,16 @@ struct DoppioMenuView: View {
 
             Divider()
 
-            Button("+15 \(state.l10n.minuteSuffix)") {
-                state.customMinutes = min(720, state.customMinutes + 15)
-                state.activate(preset: .custom)
-            }
-
-            Button("-15 \(state.l10n.minuteSuffix)") {
-                state.customMinutes = max(1, state.customMinutes - 15)
-                state.activate(preset: .custom)
+            Button {
+                promptForCustomMinutes()
+            } label: {
+                Label(state.l10n.customTimerExactTime, systemImage: "clock")
             }
         } label: {
-            Label("\(state.l10n.presetCustom) (\(state.customMinutes) \(state.l10n.minuteSuffix))...", systemImage: "slider.horizontal.3")
+            let title = state.selectedPreset == .custom
+                ? "\(state.l10n.presetCustom) (\(formattedMinutesTitle(state.customMinutes)))..."
+                : "\(state.l10n.presetCustom)..."
+            Label(title, systemImage: "slider.horizontal.3")
         }
     }
 
@@ -168,16 +154,65 @@ struct DoppioMenuView: View {
         .keyboardShortcut("q", modifiers: .command)
     }
 
-    private func formattedMinutesTitle(_ mins: Int) -> String {
-        if mins >= 60 {
-            let hours = mins / 60
-            let rem = mins % 60
-            if rem == 0 {
-                return state.l10n.presetHours(hours)
-            } else {
-                return "\(hours) ч \(rem) мин"
+    @MainActor
+    private func promptForCustomMinutes() {
+        let alert = NSAlert()
+        alert.messageText = state.l10n.customTimerPromptTitle
+        alert.informativeText = state.l10n.customTimerPromptMessage
+        alert.alertStyle = .informational
+        alert.addButton(withTitle: state.l10n.menuActivate)
+        alert.addButton(withTitle: state.l10n.cancelButton)
+
+        let input = NSTextField(frame: NSRect(x: 0, y: 0, width: 200, height: 24))
+        input.stringValue = "\(state.customMinutes)"
+        alert.accessoryView = input
+
+        NSApp.activate(ignoringOtherApps: true)
+        let response = alert.runModal()
+        if response == .alertFirstButtonReturn {
+            let text = input.stringValue.trimmingCharacters(in: .whitespacesAndNewlines)
+            if let mins = Int(text), mins >= 1 {
+                state.customMinutes = min(720, mins)
+                state.activate(preset: .custom)
             }
         }
-        return "\(mins) \(state.l10n.minuteSuffix)"
+    }
+
+    private func formattedMinutesTitle(_ mins: Int) -> String {
+        switch mins {
+        case 90:
+            switch state.l10n.code {
+            case "uk": return "1.5 години (90 хв)"
+            case "ru": return "1.5 часа (90 мин)"
+            case "de": return "1,5 Stunden (90 Min)"
+            case "fr": return "1,5 heure (90 min)"
+            case "es": return "1,5 horas (90 min)"
+            default:   return "1.5 hours (90 min)"
+            }
+        case 180:
+            return state.l10n.presetHours(3)
+        case 480:
+            switch state.l10n.code {
+            case "uk": return "8 годин (робочий день)"
+            case "ru": return "8 часов (рабочий день)"
+            case "de": return "8 Stunden (Arbeitstag)"
+            case "fr": return "8 heures (journée)"
+            case "es": return "8 horas (jornada)"
+            default:   return "8 hours (workday)"
+            }
+        case 720:
+            return state.l10n.presetHours(12)
+        default:
+            if mins >= 60 {
+                let hours = mins / 60
+                let rem = mins % 60
+                if rem == 0 {
+                    return state.l10n.presetHours(hours)
+                } else {
+                    return "\(hours) ч \(rem) мин"
+                }
+            }
+            return "\(mins) \(state.l10n.minuteSuffix)"
+        }
     }
 }

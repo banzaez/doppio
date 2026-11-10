@@ -156,6 +156,50 @@ struct SettingsView: View {
                     set: { _ in state.toggleLaunchAtLogin() }
                 )
             )
+
+            Divider()
+                .padding(.vertical, 1)
+
+            // Длительность своего таймера
+            HStack(spacing: 8) {
+                Image(systemName: "timer")
+                    .font(.system(size: 11))
+                    .foregroundStyle(Color.secondary)
+                    .frame(width: 16, alignment: .center)
+
+                Text(state.l10n.presetCustom)
+                    .font(.system(size: 11))
+                    .foregroundStyle(Color.primary)
+                    .lineLimit(1)
+
+                Spacer(minLength: 4)
+
+                HStack(spacing: 5) {
+                    Button {
+                        state.customMinutes = max(1, state.customMinutes - 5)
+                    } label: {
+                        Image(systemName: "minus")
+                            .font(.system(size: 9, weight: .bold))
+                            .frame(width: 18, height: 18)
+                    }
+                    .buttonStyle(GlassButtonStyle(cornerRadius: 5))
+
+                    Text("\(state.customMinutes) \(state.l10n.minuteSuffix)")
+                        .font(.system(size: 10.5, weight: .medium, design: .rounded))
+                        .monospacedDigit()
+                        .frame(minWidth: 46, alignment: .center)
+
+                    Button {
+                        state.customMinutes = min(720, state.customMinutes + 5)
+                    } label: {
+                        Image(systemName: "plus")
+                            .font(.system(size: 9, weight: .bold))
+                            .frame(width: 18, height: 18)
+                    }
+                    .buttonStyle(GlassButtonStyle(cornerRadius: 5))
+                }
+            }
+            .frame(height: 22)
         }
         .padding(.horizontal, 11)
         .padding(.vertical, 9)

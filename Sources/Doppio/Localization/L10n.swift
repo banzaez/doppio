@@ -8,7 +8,7 @@ public struct L10n: Sendable {
         self.language = language
     }
 
-    private var code: String {
+    public var code: String {
         language.effectiveCode
     }
 
@@ -785,6 +785,50 @@ public struct L10n: Sendable {
         case "fr": return "Ajouter une app active..."
         case "es": return "Añadir app en ejecución..."
         default:   return "Add running app..."
+        }
+    }
+
+    public var customTimerExactTime: String {
+        switch code {
+        case "uk": return "Задати точний час..."
+        case "ru": return "Задать точное время..."
+        case "de": return "Genaue Zeit festlegen..."
+        case "fr": return "Définir une durée exacte..."
+        case "es": return "Definir tiempo exacto..."
+        default:   return "Set exact time..."
+        }
+    }
+
+    public var customTimerPromptTitle: String {
+        switch code {
+        case "uk": return "Власний таймер"
+        case "ru": return "Свой таймер"
+        case "de": return "Eigener Timer"
+        case "fr": return "Minuterie personnalisée"
+        case "es": return "Temporizador personalizado"
+        default:   return "Custom Timer"
+        }
+    }
+
+    public var customTimerPromptMessage: String {
+        switch code {
+        case "uk": return "Вкажіть тривалість неспання у хвилинах (1–720):"
+        case "ru": return "Укажите длительность бодрствования в минутах (1–720):"
+        case "de": return "Aktivitätsdauer in Minuten eingeben (1–720):"
+        case "fr": return "Entrez la durée d'éveil en minutes (1–720) :"
+        case "es": return "Introduce la duración de actividad en minutos (1–720):"
+        default:   return "Enter keep-awake duration in minutes (1–720):"
+        }
+    }
+
+    public var cancelButton: String {
+        switch code {
+        case "uk": return "Скасувати"
+        case "ru": return "Отмена"
+        case "de": return "Abbrechen"
+        case "fr": return "Annuler"
+        case "es": return "Cancelar"
+        default:   return "Cancel"
         }
     }
 }
