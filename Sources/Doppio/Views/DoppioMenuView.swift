@@ -98,31 +98,41 @@ struct DoppioMenuView: View {
     @ViewBuilder
     private var presetsSection: some View {
         ForEach(standardPresets) { preset in
-            Button {
-                state.selectedPreset = preset
-                state.activate(preset: preset)
-            } label: {
-                HStack {
-                    Text(preset.title(using: state.l10n))
-                    if state.isActive && state.selectedPreset == preset {
-                        Image(systemName: "checkmark")
+            Toggle(preset.title(using: state.l10n), isOn: Binding(
+                get: { state.isActive && state.selectedPreset == preset },
+                set: { shouldBeActive in
+                    if shouldBeActive {
+                        state.selectedPreset = preset
+                        state.activate(preset: preset)
+                    } else {
+                        state.deactivate(reason: .userDisabled)
                     }
                 }
-            }
+            ))
         }
 
         Menu("\(state.l10n.presetCustom) (\(state.customMinutes) \(state.l10n.minuteSuffix))...") {
-            Button("\(state.l10n.menuActivate) (\(state.customMinutes) \(state.l10n.minuteSuffix))") {
-                state.activate(preset: .custom)
-            }
+            Toggle("\(state.l10n.menuActivate) (\(state.customMinutes) \(state.l10n.minuteSuffix))", isOn: Binding(
+                get: { state.isActive && state.selectedPreset == .custom },
+                set: { shouldBeActive in
+                    if shouldBeActive {
+                        state.activate(preset: .custom)
+                    } else {
+                        state.deactivate(reason: .userDisabled)
+                    }
+                }
+            ))
 
             Divider()
 
             ForEach(customQuickMinutes, id: \.self) { mins in
-                Button(formattedMinutesTitle(mins)) {
-                    state.customMinutes = mins
-                    state.activate(preset: .custom)
-                }
+                Toggle(formattedMinutesTitle(mins), isOn: Binding(
+                    get: { state.isActive && state.selectedPreset == .custom && state.customMinutes == mins },
+                    set: { _ in
+                        state.customMinutes = mins
+                        state.activate(preset: .custom)
+                    }
+                ))
             }
 
             Divider()
@@ -143,31 +153,19 @@ struct DoppioMenuView: View {
     private var modeAndAppearanceSection: some View {
         Menu("\(state.l10n.sectionMode): \(state.assertionType.title(using: state.l10n))") {
             ForEach(SleepAssertionType.allCases, id: \.self) { type in
-                Button {
-                    state.assertionType = type
-                } label: {
-                    HStack {
-                        Text(type.title(using: state.l10n))
-                        if state.assertionType == type {
-                            Image(systemName: "checkmark")
-                        }
-                    }
-                }
+                Toggle(type.title(using: state.l10n), isOn: Binding(
+                    get: { state.assertionType == type },
+                    set: { _ in state.assertionType = type }
+                ))
             }
         }
 
         Menu("\(state.l10n.menuBarStyleTitle): \(state.menuBarDisplayStyle.title(using: state.l10n))") {
             ForEach(MenuBarDisplayStyle.allCases) { style in
-                Button {
-                    state.menuBarDisplayStyle = style
-                } label: {
-                    HStack {
-                        Text(style.title(using: state.l10n))
-                        if state.menuBarDisplayStyle == style {
-                            Image(systemName: "checkmark")
-                        }
-                    }
-                }
+                Toggle(style.title(using: state.l10n), isOn: Binding(
+                    get: { state.menuBarDisplayStyle == style },
+                    set: { _ in state.menuBarDisplayStyle = style }
+                ))
             }
         }
     }
@@ -234,16 +232,10 @@ struct DoppioMenuView: View {
                 Divider()
 
                 ForEach([10, 15, 20, 25, 30], id: \.self) { pct in
-                    Button {
-                        state.batteryThreshold = pct
-                    } label: {
-                        HStack {
-                            Text("\(pct)%")
-                            if state.batteryThreshold == pct {
-                                Image(systemName: "checkmark")
-                            }
-                        }
-                    }
+                    Toggle("\(pct)%", isOn: Binding(
+                        get: { state.batteryThreshold == pct },
+                        set: { _ in state.batteryThreshold = pct }
+                    ))
                 }
             }
         }
