@@ -26,17 +26,7 @@ struct DoppioMenuView: View {
 
         Divider()
 
-        // 3. Режим сна и стиль отображения в строке меню
-        modeAndAppearanceSection
-
-        Divider()
-
-        // 4. Умные триггеры автоматизации и батарея
-        smartTriggersAndBatterySection
-
-        Divider()
-
-        // 5. Системные действия: Настройки и Выход
+        // 3. Системные действия: Настройки и Выход
         systemActionsSection
     }
 
@@ -160,118 +150,7 @@ struct DoppioMenuView: View {
     }
 
     @ViewBuilder
-    private var modeAndAppearanceSection: some View {
-        Menu {
-            ForEach(SleepAssertionType.allCases, id: \.self) { type in
-                Toggle(type.title(using: state.l10n), isOn: Binding(
-                    get: { state.assertionType == type },
-                    set: { _ in state.assertionType = type }
-                ))
-            }
-        } label: {
-            Label("\(state.l10n.sectionMode): \(state.assertionType.title(using: state.l10n))", systemImage: "display")
-        }
-
-        Menu {
-            ForEach(MenuBarDisplayStyle.allCases) { style in
-                Toggle(style.title(using: state.l10n), isOn: Binding(
-                    get: { state.menuBarDisplayStyle == style },
-                    set: { _ in state.menuBarDisplayStyle = style }
-                ))
-            }
-        } label: {
-            Label("\(state.l10n.menuBarStyleTitle): \(state.menuBarDisplayStyle.title(using: state.l10n))", systemImage: "menubar.rectangle")
-        }
-    }
-
-    @ViewBuilder
-    private var smartTriggersAndBatterySection: some View {
-        let isTriggerActive = state.appTriggersEnabled || state.activateOnACPower || state.activateOnExternalDisplay
-        let triggersTitle = state.l10n.settingsSmartTriggersSection
-
-        Menu {
-            Toggle(state.l10n.settingsAppTriggers, isOn: $state.appTriggersEnabled)
-
-            if state.appTriggersEnabled {
-                Divider()
-
-                if state.targetApps.isEmpty {
-                    Text(state.l10n.settingsNoTargetApps)
-                } else {
-                    ForEach(state.targetApps) { app in
-                        let isRunning = state.isTargetAppRunning(app)
-                        Label {
-                            Text(app.displayName + (isRunning ? " (\(state.l10n.menuRunning))" : ""))
-                        } icon: {
-                            Image(systemName: isRunning ? "circle.fill" : "circle")
-                        }
-                    }
-                }
-
-                Divider()
-
-                let candidates = state.candidateRunningApps()
-                if !candidates.isEmpty {
-                    Menu {
-                        ForEach(candidates) { app in
-                            Button(app.displayName) {
-                                state.addTargetApp(app)
-                            }
-                        }
-                    } label: {
-                        Label(state.l10n.menuAddRunningApp, systemImage: "plus.app")
-                    }
-                }
-            }
-
-            Divider()
-
-            if state.batteryInfo != nil {
-                Toggle(state.l10n.settingsAcPowerTrigger, isOn: $state.activateOnACPower)
-                Toggle(state.l10n.settingsBatteryDeactivateTrigger, isOn: $state.deactivateOnBattery)
-            }
-
-            Toggle(state.l10n.settingsExternalDisplayTrigger, isOn: $state.activateOnExternalDisplay)
-        } label: {
-            Label(triggersTitle, systemImage: isTriggerActive ? "bolt.badge.automatic.fill" : "bolt.badge.automatic")
-        }
-
-        if state.batteryInfo != nil {
-            let thresholdTitle = state.batteryProtectionEnabled
-                ? "\(state.l10n.settingsBatteryProtection): \(state.batteryThreshold)%"
-                : "\(state.l10n.settingsBatteryProtection): Выкл"
-
-            Menu {
-                Toggle(state.l10n.settingsBatteryProtection, isOn: $state.batteryProtectionEnabled)
-
-                Divider()
-
-                ForEach([10, 15, 20, 25, 30], id: \.self) { pct in
-                    Toggle("\(pct)%", isOn: Binding(
-                        get: { state.batteryThreshold == pct },
-                        set: { _ in state.batteryThreshold = pct }
-                    ))
-                }
-            } label: {
-                Label(thresholdTitle, systemImage: state.batteryProtectionEnabled ? "shield.fill" : "shield")
-            }
-        }
-    }
-
-    @ViewBuilder
     private var systemActionsSection: some View {
-        if let info = state.batteryInfo {
-            let iconName = info.isPluggedIn ? "battery.100.bolt" : "battery.75"
-            Label(info.description(using: state.l10n), systemImage: iconName)
-        }
-
-        Toggle(isOn: Binding(
-            get: { state.isLaunchAtLogin },
-            set: { _ in state.toggleLaunchAtLogin() }
-        )) {
-            Label(state.l10n.settingsLaunchAtLogin, systemImage: "arrow.clockwise")
-        }
-
         Button {
             SettingsWindowManager.shared.show(state: state)
         } label: {
