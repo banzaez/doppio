@@ -1,89 +1,131 @@
-# ☕️ Doppio — Keep-Awake Menu Bar Utility for macOS
+<p align="center">
+  <img src="Assets/AppIcon.png" width="128" height="128" alt="Doppio App Icon" />
+</p>
+
+# Doppio
 
 <p align="center">
-  <b>English</b> •
+  <b>Modern, lightweight, and battery-conscious keep-awake utility for macOS.</b>
+</p>
+
+<p align="center">
+  <a href="README.md"><b>English</b></a> •
   <a href="README.ru.md">Русский</a>
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/macOS-14.0%2B-blue?style=flat-square&logo=apple&logoColor=white" alt="macOS 14.0+" />
-  <img src="https://img.shields.io/badge/Swift-6.4-orange?style=flat-square&logo=swift&logoColor=white" alt="Swift 6.4" />
-  <img src="https://img.shields.io/badge/Architecture-Universal-brightgreen?style=flat-square" alt="Universal" />
-  <img src="https://img.shields.io/badge/Version-1.5.0-purple?style=flat-square" alt="Version 1.5.0" />
-  <img src="https://img.shields.io/badge/License-MIT-green?style=flat-square" alt="License MIT" />
+  <a href="https://github.com/banzaez/doppio/releases/latest"><img src="https://img.shields.io/badge/Release-v1.5.0-7952b3?style=flat-square&logo=apple" alt="Release v1.5.0" /></a>
+  <img src="https://img.shields.io/badge/macOS-14.0%2B%20(Sonoma%20%7C%20Sequoia)-0078D7?style=flat-square&logo=apple&logoColor=white" alt="macOS 14.0+" />
+  <img src="https://img.shields.io/badge/Swift-6.4-F05138?style=flat-square&logo=swift&logoColor=white" alt="Swift 6.4" />
+  <img src="https://img.shields.io/badge/Architecture-Universal%20(Apple%20Silicon%20%26%20Intel)-success?style=flat-square" alt="Universal Architecture" />
+  <img src="https://img.shields.io/badge/License-MIT-blue?style=flat-square" alt="MIT License" />
+  <img src="https://img.shields.io/badge/Tests-100%25%20Passing-brightgreen?style=flat-square" alt="Tests 100% Passing" />
 </p>
-
-> **Doppio** is a modern, lightweight, and battery-efficient menu bar utility for macOS designed to prevent your Mac from sleeping during long-running tasks, presentations, file transfers, compilations, or media renders.
-
-Crafted specifically for macOS Sonoma and Sequoia with modern Swift 6 strict concurrency, native Liquid Glass styling, and zero-idle CPU overhead.
 
 ---
 
-## ✨ Features at a Glance
+## 📖 Overview
 
-### 🪟 Native macOS Menu & SF Symbols
-- **System-Native Menu (`NSMenu`)**: Clean dropdown interface adhering to Apple Human Interface Guidelines with native 6pt corner radii and subtle Liquid Glass materials.
-- **Monochrome Apple SF Symbols**: High-contrast, automatically tinted vector icons that look crisp in both light and dark macOS appearance.
-- **Instant Preset Activation**: 1-click timer engagement marked with system checkmarks (`✓`), interactive session extension submenus, and quick custom timer inputs.
+**Doppio** is an open-source macOS menu bar application designed to prevent your Mac from sleeping during critical tasks — including long code compilations, machine learning training runs, high-resolution renders, live presentations, webinars, and large file transfers.
 
-### ⚙️ Liquid Glass Settings Window (`⌘,`)
-- **Fixed Calibrated Geometry**: Precisely sized at `360 × 355 pt` to accommodate all sections seamlessly without jarring window resizes, scrollbars, or layout shifts.
-- **Native Titlebar Integration**: Seamless macOS traffic-light buttons and spring-animated tab transitions.
-- **3 Logical Preference Panels**:
-  - **General**: Interface language, launch at login, menu bar display format, low battery thresholds, and notifications.
-  - **Automation**: Smart app triggers, AC power plug-in rules, external display detection, and battery safety cutoffs.
-  - **About**: Version information, release details, GitHub update checker, and repository links.
+Unlike legacy utilities that poll system state or run heavy background runloops, Doppio is engineered from scratch for modern macOS versions (Sonoma & Sequoia). It leverages **Swift 6 Strict Concurrency**, actor-isolated **IOKit Power Assertions**, **event-driven hardware observation**, and an adaptive monotonic countdown clock that consumes **0% idle CPU**.
 
-### 🔄 In-App GitHub Releases Updater
-- **Direct GitHub Releases API Integration**: Seamlessly checks updates against `banzaez/doppio`.
-- **Interactive Update Dialogs**: View release notes and launch direct updates with a single click.
-- **Automated Daily Checks**: Optional background update verification once every 24 hours.
+---
 
-### ⚡️ Quick Toggle & Headless Mode
-- **Dual Mouse Click Support**: Left or right click on the menu bar icon toggles the full menu extra.
-- **Option-Click (`⌥-Click`) Headless Toggle**: Instantly activate or deactivate keep-awake without expanding the menu extra or disturbing your workflow.
+## 📑 Table of Contents
 
-### 📱 Notch-Aware Menu Bar Modes
-- **Standard Mode**: Displays the coffee cup icon with live countdown timer (`☕️ 45m`).
-- **Minimalist Mode**: Displays icon only (`☕️`) to preserve precious menu bar real estate on notched MacBook displays.
+- [Why Doppio?](#-why-doppio)
+- [Key Features](#-key-features)
+  - [Native Menu & Liquid Glass Aesthetics](#-native-menu--liquid-glass-aesthetics)
+  - [Calibrated Settings Window (`⌘,`)](#-calibrated-settings-window-)
+  - [Headless Toggle & Fast Access](#-headless-toggle--fast-access)
+  - [Notch-Optimized Display Modes](#-notch-optimized-display-modes)
+  - [Intelligent Automation Triggers](#-intelligent-automation-triggers)
+  - [Hardware-Aware Power Management & Battery Protection](#-hardware-aware-power-management--battery-protection)
+  - [Integrated GitHub Releases Updater](#-integrated-github-releases-updater)
+  - [Full Internationalization (i18n)](#-full-internationalization-i18n)
+- [Architecture & Engineering Standards](#-architecture--engineering-standards)
+- [Comparison with Alternatives](#-comparison-with-alternatives)
+- [Installation & Getting Started](#-installation--getting-started)
+- [Diagnostics & Verification](#-diagnostics--verification)
+- [Project Structure](#-project-structure)
+- [Keyboard Shortcuts](#-keyboard-shortcuts)
+- [License](#-license)
 
-### 🤖 Smart Automation Triggers
-- **Application Triggers**: Automatically keeps your Mac awake while resource-intensive programs (e.g., Xcode, Final Cut Pro, Blender, Zoom) are running, and automatically releases sleep assertions upon termination.
-- **1-Click Process Picker**: Instantly select from running user processes with cached app icons, or browse any `.app` bundle via the native open dialog.
-- **AC Power Detection**: Automatically start keep-awake when connected to a charger, and revert when running on battery.
-- **External Display Detection**: Keep the system awake whenever an external monitor or projector is connected.
-- **Instant Wake Synchronization**: Listens for system wake notifications (`NSWorkspace.didWakeNotification`) to immediately resynchronize sleep timers and assertion states.
+---
 
-### ⏱ Presets & Custom Duration Stepper
-- **Quick Presets**: `∞ Indefinite`, `15m`, `30m`, `1h`, `2h`, `4h`.
-- **Custom Timer Stepper**: Tactile glass stepper with `−` / `+` controls in 5-minute increments (from 1 to 720 minutes), avoiding keyboard focus traps.
+## 💡 Why Doppio?
 
-### 🖥 Two Sleep Prevention Modes
-- **Display & System**: Keeps both the display and system awake. The screen will not dim or lock (ideal for reading, webinars, and live presentations).
-- **System Only**: Allows the display to sleep normally to conserve power and protect the screen, while keeping the CPU, background render pipelines, network transfers, and servers active.
+| Requirement | Traditional Tools (Amphetamine / Caffeine) | `caffeinate` CLI | **Doppio** |
+|:---|:---:|:---:|:---:|
+| **Modern Concurrency** | Legacy Runloops / Locks | N/A | **Swift 6 Actor Isolation & Sendable** |
+| **Idle CPU Usage** | Periodic timer polling (~0.5–2% CPU) | Low | **True Zero-Idle (Adaptive 1s → 60s)** |
+| **Power Source Hook** | Periodic polling | None | **Event-Driven `CFRunLoopSource` (IOKit)** |
+| **MacBook Notch Fit** | Fixed wide text badge | None | **Icon-Only & Full Countdown Modes** |
+| **Monotonic Clock** | Vulnerable to NTP / time shifts | Wall clock | **`ContinuousClock` (Immune to time shifts)** |
+| **Process Triggers** | Complex, multi-layered settings | Manual PID flag | **1-Click running app picker + auto-release** |
+| **Battery Guard** | Basic or none | None | **Configurable cutoff (10–30%)** |
+| **Apple Design Alignment**| Outdated Aqua / Big Sur UI | None | **Native Liquid Glass & SF Symbols** |
 
-### 🛡 Intelligent Battery Protection
-- **Low-Battery Auto-Stop**: Automatically releases sleep locks if battery charge drops below a configurable threshold (10% to 30%), preventing your Mac from dying unexpectedly while untethered.
-- **Live Battery Status**: Real-time power monitoring with power source indicators (AC Power / Battery / Charging).
+---
 
-### 🔔 Interactive User Notifications
-- Sends a native macOS notification 1 minute before the keep-awake session expires.
-- Banner actions allow you to extend the session by **"+15 min"** or switch to **"∞ Indefinite"** directly from the notification prompt.
+## ✨ Key Features
 
-### 🌐 Multilingual & Auto-Detection
-- Fully localized in **English**, **Ukrainian**, **Russian**, **German**, **French**, and **Spanish**.
-- Automatic language detection based on system preferences (`Locale.preferredLanguages`) on first launch, with the ability to override manually in Settings.
+### 🪟 Native Menu & Liquid Glass Aesthetics
+- **macOS System-Native Menus**: Built with `NSMenu` and `MenuBarExtra`, respecting Apple Human Interface Guidelines with standard 6pt corner radii and subtle glass materials.
+- **Monochrome Apple SF Symbols**: Automatically adapts vibrancy and contrast across Light Mode, Dark Mode, and dynamic accent colors.
+- **Visual Feedback**: Real-time checkmarks (`✓`) indicating active presets, quick session extension menus, and tactile stepper controls.
+
+### ⚙️ Calibrated Settings Window (`⌘,`)
+- **Fixed-Geometry Canvas (`360 × 355 pt`)**: Optimized to fit the largest section without content clipping, unwanted scrollbars, or distracting resize jumps.
+- **Native macOS Titlebar**: Integrated window controls (traffic lights) with smooth spring-animated tab switching.
+- **Three Focused Preference Tabs**:
+  1. **General**: Interface language, launch at login via `SMAppService`, menu bar display style, low battery safety threshold, and expiration warnings.
+  2. **Automation**: App triggers, AC power plug-in rules, external monitor detection, and sleep-on-disconnect toggles.
+  3. **About**: Release channel status, update verification, and repository information.
+
+### ⚡️ Headless Toggle & Fast Access
+- **Dual-Action Menu Item**: Standard left or right click opens the interactive menu.
+- **`⌥-Click` (Option-Click) Headless Toggle**: Option-click the menu bar icon to toggle keep-awake on and off instantly without displaying popovers or opening menus.
+
+### 📱 Notch-Optimized Display Modes
+- **Full Mode**: Displays the coffee cup symbol alongside the active countdown (`☕️ 45m`).
+- **Minimalist Mode**: Displays only the icon (`☕️`) to preserve valuable horizontal space on 14" and 16" MacBook Pro screens with a camera notch.
+
+### 🤖 Intelligent Automation Triggers
+- **Process Automation (App Triggers)**: Keeps your Mac awake while resource-intensive apps (e.g., Xcode, Final Cut Pro, Blender, DaVinci Resolve, Zoom) are open, automatically releasing sleep assertions when the app terminates.
+- **Active Process Picker**: Select running applications directly from a pre-filtered list with cached app icons, or browse any `.app` bundle from disk.
+- **AC Power Detection**: Automatically activates keep-awake when plugged into a charger and deactivates upon switching to battery.
+- **External Display Detection**: Maintains wakefulness whenever an external monitor or projector is connected (including Clamshell mode support).
+- **Instant System Wake Sync**: Observes `NSWorkspace.didWakeNotification` to immediately re-validate timers and power assertions upon opening your laptop lid.
+
+### 🛡 Hardware-Aware Power Management & Battery Protection
+- **Low-Battery Safety Cutoff**: Automatically disables sleep prevention when the battery drops below your defined threshold (10% to 30%), ensuring you never arrive at a meeting with an empty battery.
+- **Real-Time Battery Telemetry**: Shows active power source status (AC Power, Battery, or Charging) without polling.
+- **Two Distinct Sleep Modes**:
+  - **Display & System**: Inhibits both display dimming and system sleep (`kIOPMAssertionTypePreventUserIdleDisplaySleep`). Ideal for reading, presentations, and remote screen sharing.
+  - **System Only**: Allows the display to switch off normally while keeping processors, network sockets, servers, and background renders alive (`kIOPMAssertionTypePreventUserIdleSystemSleep`).
+
+### 🔄 Integrated GitHub Releases Updater
+- Direct, lightweight integration with the GitHub Releases API (`banzaez/doppio`).
+- Interactive update alerts featuring release notes, SemVer validation, and one-click direct downloads.
+- Optional automated daily background checks.
+
+### 🌐 Full Internationalization (i18n)
+- Built-in localization for **6 languages**: English, Ukrainian (`Українська`), Russian (`Русский`), German (`Deutsch`), French (`Français`), and Spanish (`Español`).
+- Automatic locale detection (`Locale.preferredLanguages`) on first launch with manual override in settings.
+- Grammatically accurate pluralization engine across all supported language families.
 
 ---
 
 ## 🏛 Architecture & Engineering Standards
 
-Doppio is built following modern macOS & Swift engineering standards:
+Doppio was developed under strict Apple platform conventions and Swift 6 design principles:
 
 ```
 ┌────────────────────────────────────────────────────────┐
 │                      DoppioApp                         │
-│       (@main, MenuBarExtra, LSUIElement = true)        │
+│   (@main, MenuBarExtra, LSUIElement = true, Accessory) │
 └──────────────────────────┬─────────────────────────────┘
                            │
              ┌─────────────▼─────────────┐
@@ -91,67 +133,80 @@ Doppio is built following modern macOS & Swift engineering standards:
              │   (@Observable MainActor) │
              └──────┬─────────────┬──────┘
                     │             │
-        ┌───────────▼──┐       ┌──▼────────────────┐
-        │ SleepActor   │       │ Background Svcs   │
-        │ Swift Actor  │       │ - SmartTriggers   │
-        │ IOKit Assert │       │ - BatteryMonitor  │
-        └──────────────┘       │ - AppUpdate       │
-                               │ - SessionTimer    │
-                               └───────────────────┘
+        ┌───────────▼──┐       ┌──▼────────────────────────┐
+        │ SleepActor   │       │ Background Services       │
+        │ Swift Actor  │       │ - SmartTriggerService     │
+        │ IOKit PM     │       │ - BatteryMonitorService   │
+        └──────────────┘       │ - AppUpdateService        │
+                               │ - SessionTimerController  │
+                               └───────────────────────────┘
 ```
 
-1. **Swift 6 & Strict Concurrency**:
-   - `SleepAssertionService` is an isolated **Swift Actor**, ensuring thread-safe manipulation of `IOPMAssertionID` descriptors without race conditions.
-   - Session timing is handled via `ContinuousClock` and structured `Task` loops, making countdowns impervious to system clock / NTP adjustments.
-   - Strict `@Sendable` boundaries and actor isolation across background services.
-2. **SwiftUI & Observation**:
-   - Central application state (`DoppioState`) utilizes Apple's `@Observable` macro on `@MainActor`.
-   - Runs with `LSUIElement = true` and `NSApplication.ActivationPolicy.accessory`, living strictly in the menu bar without cluttering the macOS Dock.
-   - Zero-Idle CPU footprint: adaptive tick interval (1 second when UI is active, down to 60 seconds in background).
-3. **IOKit Subsystems**:
-   - `IOKit.pwr_mgt`: Low-level creation and reliable release of `kIOPMAssertionTypePreventUserIdleDisplaySleep` and `kIOPMAssertionTypePreventUserIdleSystemSleep`.
-   - `IOKit.ps`: Native hardware power state polling via `IOPSCopyPowerSourcesInfo`.
-4. **ServiceManagement Framework**:
-   - Uses `SMAppService.mainApp` — modern macOS launch-at-login API without legacy helper daemons or background scripting bridges.
-5. **Swift Testing**:
-   - 100% core test suite implemented with Apple's modern `Testing` framework (`@Suite`, `@Test`, `#expect`).
+1. **Strict Concurrency & Actor Isolation**:
+   - `SleepAssertionService` is encapsulated in a dedicated **Swift Actor**, providing compile-time thread safety for `IOPMAssertionID` lifecycles and eliminating race conditions.
+   - Clean `@Sendable` boundaries ensure zero data races under the Swift 6 compiler.
+2. **Observation Framework**:
+   - `DoppioState` uses the modern `@Observable` macro on `@MainActor`, eliminating the overhead of legacy `Combine` publishers.
+3. **Continuous Monotonic Time**:
+   - `SessionTimerController` is driven by Apple's `ContinuousClock`. Timing calculations remain accurate regardless of system clock adjustments, NTP updates, or daylight saving transitions.
+4. **Adaptive Sleep Intervals (Zero-Idle CPU)**:
+   - When the user interface is visible, the timer ticks at 1.0s intervals for smooth progress rings.
+   - When running in the background, the timer sleeps until the exact moment of the next minute boundary or the 60-second expiration alert, reducing idle CPU usage to zero.
+5. **Event-Driven Power Monitoring**:
+   - `BatteryMonitorService` registers a `CFRunLoopSource` using `IOPSNotificationCreateRunLoopSource` on the main runloop, avoiding recurring timer checks.
+6. **Native System Autostart**:
+   - Employs `SMAppService.mainApp`, Apple's modern Launch-at-Login standard that requires no external helper binaries.
 
 ---
 
-## 🚀 Getting Started
+## 🚀 Installation & Getting Started
 
 ### System Requirements
-- **macOS 14.0 (Sonoma)** or later (including macOS 15+ Sequoia).
-- Compatible with Apple Silicon (M1/M2/M3/M4) and Intel Macs.
+- **macOS 14.0 (Sonoma)** or **macOS 15+ (Sequoia)**.
+- Compatible with Apple Silicon (M1/M2/M3/M4) and Intel architectures (Universal).
 
-### Run Prebuilt Application
-If you have downloaded the release archive:
-```bash
-open Doppio.app
-```
+### Prebuilt Binary
+1. Download the latest `Doppio.zip` from [GitHub Releases](https://github.com/banzaez/doppio/releases/latest).
+2. Unzip and drag `Doppio.app` to your `/Applications` folder.
+3. Launch Doppio. It will appear directly in your menu bar.
 
-### Build from Source
-Ensure Xcode 15.3+ or Swift 6.0+ toolchain is installed:
+### Building from Source
+Ensure Xcode 15.3+ or Swift 6.0+ is installed:
 
 ```bash
 # Clone the repository
 git clone https://github.com/banzaez/doppio.git
 cd doppio
 
-# Build the signed standalone application bundle
+# Build and package the release application
 ./build_app.sh
 
-# Open the compiled app
+# Launch the newly built app
 open Doppio.app
 ```
 
-### Run and Test with Swift CLI
-```bash
-# Run locally
-swift run
+### Running Tests
+Execute the comprehensive test suite powered by the modern Swift `Testing` framework:
 
-# Execute comprehensive test suite
+```bash
 swift test
+```
+
+---
+
+## 🔍 Diagnostics & Verification
+
+You can verify that Doppio is actively preventing sleep directly from the macOS Terminal using Apple's power management diagnostics tool:
+
+```bash
+pmset -g assertions
+```
+
+When Doppio is active, you will see an entry similar to:
+
+```text
+   PreventUserIdleDisplaySleep named: "Doppio Keep-Awake Session"
+   PreventUserIdleSystemSleep  named: "Doppio Keep-Awake Session"
 ```
 
 ---
@@ -160,62 +215,63 @@ swift test
 
 ```text
 doppio/
-├── Doppio.app/               # Compiled macOS Application Bundle
-├── Package.swift             # Swift Package Manager Manifest (Swift 6.4)
-├── build_app.sh              # Release bundle packager and ad-hoc code signer
-├── generate_icon.swift       # Vector icon synthesis utility
-├── README.md                 # English documentation
-├── README.ru.md              # Russian documentation
+├── Assets/
+│   └── AppIcon.png                 # Application logo (256x256 PNG)
+├── AppIcon.icns                    # Multi-resolution macOS icon bundle
+├── build_app.sh                    # Release packager and ad-hoc code signer
+├── Package.swift                   # Swift Package Manager manifest (Swift 6.4)
+├── README.md                       # English documentation
+├── README.ru.md                    # Russian documentation
 ├── Sources/
 │   └── Doppio/
-│       ├── DoppioApp.swift   # App entry point (@main, MenuBarExtra)
+│       ├── DoppioApp.swift         # Entry point (@main, MenuBarExtra, LSUIElement)
 │       ├── Localization/
-│       │   ├── AppLanguage.swift           # Supported locales and auto-detection
-│       │   └── L10n.swift                  # Localized strings dictionary with pluralization
+│       │   ├── AppLanguage.swift   # Supported languages & auto-detection
+│       │   └── L10n.swift          # Localized strings dictionary with pluralization
 │       ├── Models/
-│       │   ├── KeepAwakePreset.swift       # Preset duration configurations
-│       │   ├── SleepAssertionType.swift    # Sleep modes (Display + System / System Only)
-│       │   ├── BatteryInfo.swift           # Battery and charging state representation
-│       │   ├── DeactivationReason.swift    # Session termination causes
-│       │   ├── MenuBarDisplayStyle.swift   # Icon-only vs Icon + Timer styles
-│       │   ├── SessionTriggerSource.swift  # Trigger origins (Manual, AC, App, Monitor)
-│       │   └── TriggerApp.swift            # Process automation entity
+│       │   ├── BatteryInfo.swift   # Power state & charging telemetry
+│       │   ├── DeactivationReason.swift # Structured session termination reasons
+│       │   ├── KeepAwakePreset.swift    # Preset duration definitions
+│       │   ├── MenuBarDisplayStyle.swift# Standard vs Minimalist notch display
+│       │   ├── SessionTriggerSource.swift# Trigger origins (Manual, AC, App, Display)
+│       │   ├── SleepAssertionType.swift # Display+System vs System-Only assertion modes
+│       │   └── TriggerApp.swift    # Target process automation entity
 │       ├── Services/
-│       │   ├── SleepAssertionService.swift # Swift Actor wrapping IOKit assertions
-│       │   ├── BatteryMonitorService.swift # Event-driven IOKit battery monitoring
-│       │   ├── SmartTriggerService.swift   # Structured Concurrency process & monitor watchers
-│       │   ├── AppNotificationService.swift# UserNotifications dispatcher with action buttons
-│       │   ├── QuickClickMonitor.swift     # Option-click (⌥) and secondary click interceptor
-│       │   ├── LaunchAtLoginService.swift  # SMAppService login item controller
-│       │   └── AppUpdateService.swift      # GitHub Releases update validator
+│       │   ├── AppNotificationService.swift # Interactive user notifications
+│       │   ├── AppUpdateService.swift       # GitHub Releases update checker
+│       │   ├── BatteryMonitorService.swift  # Event-driven IOKit battery listener
+│       │   ├── LaunchAtLoginService.swift   # SMAppService login item manager
+│       │   ├── QuickClickMonitor.swift      # Option-click (⌥) and secondary click interceptor
+│       │   ├── SleepAssertionService.swift  # Swift Actor managing IOKit sleep assertions
+│       │   └── SmartTriggerService.swift    # Structured Concurrency process & monitor watchers
 │       ├── State/
-│       │   ├── DoppioState.swift           # @Observable coordinator managing UI & timers
-│       │   ├── SessionTimerController.swift# ContinuousClock monotonic timer controller
-│       │   └── DoppioSettingsStore.swift   # UserDefaults persistence adapter
+│       │   ├── DoppioSettingsStore.swift    # UserDefaults persistence layer
+│       │   ├── DoppioState.swift            # Observable coordinator managing state & business logic
+│       │   └── SessionTimerController.swift # ContinuousClock monotonic countdown controller
 │       └── Views/
-│           ├── MenuBarLabelView.swift      # Dynamic menu bar icon & status label
-│           ├── DoppioPopoverView.swift     # Interactive popover card interface
-│           ├── DoppioMenuView.swift        # Native NSMenu fallback / companion
-│           ├── SettingsView.swift          # Modular 3-tab preferences window
-│           └── Components/
-│               ├── ControlCenterHeroCard.swift    # Status card with countdown progress ring
-│               ├── PresetSelectionView.swift      # Grid of quick presets and duration stepper
-│               ├── SleepModeSelectorView.swift    # Fluid mode switch control
-│               ├── FooterActionsView.swift        # Bottom toolbar, battery gauge, and settings trigger
-│               ├── GlassStyles.swift              # Liquid Glass modifiers and materials
-│               ├── ModelPresentation.swift        # Presentation-layer formatting extensions
-│               ├── WindowAutoResizer.swift        # Window geometry constraints
-│               └── SettingsWindowManager.swift    # Window delegate and geometry controller
+│           ├── Components/
+│           │   ├── ControlCenterHeroCard.swift  # Status card with progress ring
+│           │   ├── FooterActionsView.swift      # Bottom toolbar & battery indicator
+│           │   ├── GlassStyles.swift            # Liquid Glass visual modifiers
+│           │   ├── ModelPresentation.swift      # Presentation helpers & formatters
+│           │   ├── PresetSelectionView.swift    # Preset grid & custom duration stepper
+│           │   ├── SettingsWindowManager.swift  # Settings window geometry & delegate controller
+│           │   ├── SleepModeSelectorView.swift  # Animated sleep mode selector
+│           │   └── WindowAutoResizer.swift      # Dynamic height constraint helper
+│           ├── DoppioMenuView.swift         # Native NSMenu layout
+│           ├── DoppioPopoverView.swift      # Popover UI interface
+│           ├── MenuBarLabelView.swift       # Status bar item view
+│           └── SettingsView.swift           # 3-tab preferences window
 └── Tests/
     └── DoppioTests/
-        └── DoppioTests.swift # Swift Testing test suites (@Suite, @Test)
+        └── DoppioTests.swift       # Swift Testing suite (21 unit & integration tests)
 ```
 
 ---
 
 ## ⌨️ Keyboard Shortcuts
 
-| Shortcut | Description |
+| Shortcut | Action |
 |:---|:---|
 | `⌥ + Click` on Menu Bar Icon | Instantly toggle keep-awake without opening the menu |
 | `⌘ + ,` | Open Settings window |
@@ -225,4 +281,4 @@ doppio/
 
 ## 📄 License
 
-Doppio is distributed under the MIT License.
+Doppio is free and open-source software distributed under the [MIT License](https://opensource.org/licenses/MIT).
