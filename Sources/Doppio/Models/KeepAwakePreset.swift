@@ -10,6 +10,10 @@ public enum KeepAwakePreset: Equatable, Hashable, Identifiable, CaseIterable, Se
     case hours4
     case custom
 
+    public static let standardPresets: [KeepAwakePreset] = [
+        .indefinite, .minutes15, .minutes30, .hour1, .hours2, .hours4
+    ]
+
     public var id: String {
         switch self {
         case .indefinite: return "indefinite"

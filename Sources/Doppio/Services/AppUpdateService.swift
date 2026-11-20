@@ -1,5 +1,6 @@
 import Foundation
 import AppKit
+import Observation
 import os
 
 /// Результат проверки обновлений
@@ -11,23 +12,34 @@ public enum UpdateCheckResult: Equatable, Sendable {
     case failed(message: String)
 }
 
-/// Сервис проверки и загрузки обновлений Doppio через GitHub Releases API
+/// Протокол сервиса проверки обновлений приложения
 @MainActor
-public final class AppUpdateService: ObservableObject {
+public protocol AppUpdateManaging: AnyObject {
+    var status: UpdateCheckResult { get }
+    var isChecking: Bool { get }
+    var currentVersion: String { get }
+    @discardableResult
+    func checkForUpdates(isUserInitiated: Bool, l10n: L10n?) async -> UpdateCheckResult
+}
+
+/// Сервис проверки и загрузки обновлений Doppio через GitHub Releases API
+@Observable
+@MainActor
+public final class AppUpdateService: AppUpdateManaging {
     public static let shared = AppUpdateService()
 
     private let logger = Logger(subsystem: "com.doppio.app", category: "AppUpdateService")
     private let repoOwner = "banzaez"
     private let repoName = "doppio"
 
-    @Published public private(set) var status: UpdateCheckResult = .idle
-    @Published public private(set) var isChecking: Bool = false
+    public private(set) var status: UpdateCheckResult = .idle
+    public private(set) var isChecking: Bool = false
 
     public init() {}
 
     /// Текущая версия приложения
     public var currentVersion: String {
-        Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.5.0"
+        Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.5.1"
     }
 
     /// Проверка обновлений на GitHub

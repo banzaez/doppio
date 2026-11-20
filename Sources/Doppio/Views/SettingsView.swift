@@ -30,20 +30,12 @@ enum SettingsTab: String, CaseIterable, Identifiable {
 /// Экран настроек Doppio в стеклянном стиле macOS 2026 Liquid Glass (компактная адаптивная вёрстка)
 struct SettingsView: View {
     @Bindable var state: DoppioState
-    var showsHeader: Bool = true
-    var onBack: (() -> Void)? = nil
 
     @State private var selectedTab: SettingsTab = .general
     @Namespace private var tabNamespace
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
-            // Заголовок с идеально центрированным названием и кнопкой Назад
-            if showsHeader {
-                headerView
-                    .padding(.bottom, 2)
-            }
-
             // Стеклянная панель переключения вкладок macOS 27 Liquid Glass
             glassTabBar
 
@@ -55,15 +47,11 @@ struct SettingsView: View {
                     menuBarSection
                 case .automation:
                     smartTriggersSection
-                    if state.batteryInfo != nil {
-                        batterySection
-                    }
+                    batterySection
                 case .about:
                     aboutSection
                 }
             }
-
-            Spacer(minLength: 0)
         }
     }
 
@@ -126,36 +114,6 @@ struct SettingsView: View {
     }
 
     // MARK: - Секции интерфейса
-
-    private var headerView: some View {
-        ZStack {
-            Text(state.l10n.settingsTitle)
-                .font(.system(size: 13, weight: .semibold))
-                .foregroundStyle(Color.primary)
-                .lineLimit(1)
-
-            HStack {
-                if let onBack = onBack {
-                    Button(action: onBack) {
-                        HStack(spacing: 4) {
-                            Image(systemName: "chevron.left")
-                                .font(.system(size: 10, weight: .bold))
-                            Text(state.l10n.backButton)
-                                .font(.system(size: 11, weight: .medium))
-                                .lineLimit(1)
-                        }
-                        .foregroundStyle(Color.orange)
-                        .padding(.horizontal, 8)
-                        .frame(height: 22)
-                    }
-                    .buttonStyle(GlassButtonStyle(cornerRadius: 7))
-                }
-
-                Spacer()
-            }
-        }
-        .frame(height: 24)
-    }
 
     private var generalSection: some View {
         VStack(spacing: 7) {
@@ -254,6 +212,49 @@ struct SettingsView: View {
                 }
             }
             .frame(height: 22)
+
+            Divider()
+                .padding(.vertical, 1)
+
+            // Режим бодрствования (Только Mac | Экран и Mac)
+            VStack(alignment: .leading, spacing: 6) {
+                HStack(spacing: 8) {
+                    Image(systemName: "cup.and.saucer")
+                        .font(.system(size: 11))
+                        .foregroundStyle(Color.secondary)
+                        .frame(width: 16, alignment: .center)
+
+                    Text(state.l10n.sectionMode)
+                        .font(.system(size: 11))
+                        .foregroundStyle(Color.primary)
+                        .lineLimit(1)
+                }
+                .help(state.assertionType.description(using: state.l10n))
+
+                HStack(spacing: 5) {
+                    ForEach(SleepAssertionType.allCases, id: \.self) { type in
+                        let isSelected = state.assertionType == type
+                        Button {
+                            withAnimation(.easeInOut(duration: 0.16)) {
+                                state.assertionType = type
+                            }
+                        } label: {
+                            HStack(spacing: 5) {
+                                Image(systemName: type.iconName)
+                                    .font(.system(size: 10))
+                                Text(type.title(using: state.l10n))
+                                    .font(.system(size: 10.5, weight: isSelected ? .bold : .medium))
+                                    .lineLimit(1)
+                                    .minimumScaleFactor(0.85)
+                            }
+                            .frame(maxWidth: .infinity)
+                            .frame(height: 22)
+                        }
+                        .buttonStyle(GlassButtonStyle(isSelected: isSelected, isAccent: true, cornerRadius: 6))
+                    }
+                }
+                .help(state.assertionType.description(using: state.l10n))
+            }
         }
         .padding(.horizontal, 11)
         .padding(.vertical, 9)
@@ -450,7 +451,8 @@ struct SettingsView: View {
     }
 
     private var targetAppsRows: some View {
-        VStack(spacing: 3) {
+        let runningBundles = state.runningBundleIdentifiers()
+        return VStack(spacing: 3) {
             ForEach(state.targetApps) { app in
                 HStack(spacing: 8) {
                     Image(nsImage: app.appIcon)
@@ -459,7 +461,7 @@ struct SettingsView: View {
                         .frame(width: 14, height: 14)
 
                     Circle()
-                        .fill(state.isTargetAppRunning(app) ? Color.green : Color.secondary.opacity(0.35))
+                        .fill(runningBundles.contains(app.bundleIdentifier) ? Color.green : Color.secondary.opacity(0.35))
                         .frame(width: 5, height: 5)
 
                     Text(app.displayName)
@@ -556,8 +558,7 @@ struct SettingsView: View {
     }
 
     private var aboutSection: some View {
-        let version = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.5.0"
-        return VStack(spacing: 8) {
+        VStack(spacing: 8) {
             // Карточка приложения
             VStack(spacing: 4) {
                 Image(systemName: "cup.and.saucer.fill")
@@ -569,7 +570,7 @@ struct SettingsView: View {
                     .font(.system(size: 15, weight: .bold, design: .rounded))
                     .foregroundStyle(Color.primary)
 
-                Text("v\(version) • macOS 2026")
+                Text("v\(state.updateService.currentVersion) • macOS 2026")
                     .font(.system(size: 10.5, weight: .regular))
                     .foregroundStyle(Color.secondary)
             }
@@ -631,13 +632,13 @@ struct SettingsView: View {
 
                 Button {
                     Task { @MainActor in
-                        await AppUpdateService.shared.checkForUpdates(isUserInitiated: true, l10n: state.l10n)
+                        await state.updateService.checkForUpdates(isUserInitiated: true, l10n: state.l10n)
                     }
                 } label: {
                     HStack(spacing: 4) {
                         Image(systemName: "arrow.clockwise")
                             .font(.system(size: 9.5))
-                        Text(state.l10n.updateCheckButton)
+                        Text(state.updateService.isChecking ? state.l10n.updateChecking : state.l10n.updateCheckButton)
                             .font(.system(size: 10, weight: .medium))
                     }
                     .foregroundStyle(Color.orange)
@@ -645,6 +646,7 @@ struct SettingsView: View {
                     .frame(height: 20)
                 }
                 .buttonStyle(GlassButtonStyle(cornerRadius: 6))
+                .disabled(state.updateService.isChecking)
             }
 
             Divider()
@@ -705,17 +707,6 @@ struct SettingsView: View {
             withAnimation(.easeInOut(duration: 0.16)) {
                 state.addTargetApp(from: url)
             }
-        }
-    }
-}
-
-/// Ключ предпочтений для измерения высоты контента настроек
-public struct SettingsContentHeightKey: PreferenceKey {
-    public static let defaultValue: CGFloat = 0
-    public static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) {
-        let next = nextValue()
-        if next > 0 {
-            value = next
         }
     }
 }

@@ -37,10 +37,7 @@ public final class SessionTimerController {
 
     /// Продление или перезапуск с новым временем (сбрасывает флаг уведомления о скором завершении)
     public func restart(duration: TimeInterval) {
-        self.hasSentExpiryNotification = false
-        let targetDeadline = clock.now.advanced(by: .milliseconds(Int(duration * 1000)))
-        self.deadline = targetDeadline
-        startCountdownLoop(targetDeadline: targetDeadline)
+        start(duration: duration)
     }
 
     /// Остановка таймера

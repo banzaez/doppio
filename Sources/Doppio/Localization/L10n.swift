@@ -152,6 +152,44 @@ public struct L10n: Sendable {
         }
     }
 
+    public func formattedCustomMinutes(_ mins: Int) -> String {
+        switch mins {
+        case 90:
+            switch code {
+            case "uk": return "1.5 години (90 хв)"
+            case "ru": return "1.5 часа (90 мин)"
+            case "de": return "1,5 Stunden (90 Min)"
+            case "fr": return "1,5 heure (90 min)"
+            case "es": return "1,5 horas (90 min)"
+            default:   return "1.5 hours (90 min)"
+            }
+        case 180:
+            return presetHours(3)
+        case 480:
+            switch code {
+            case "uk": return "8 годин (робочий день)"
+            case "ru": return "8 часов (рабочий день)"
+            case "de": return "8 Stunden (Arbeitstag)"
+            case "fr": return "8 heures (journée)"
+            case "es": return "8 horas (jornada)"
+            default:   return "8 hours (workday)"
+            }
+        case 720:
+            return presetHours(12)
+        default:
+            if mins >= 60 {
+                let hours = mins / 60
+                let rem = mins % 60
+                if rem == 0 {
+                    return presetHours(hours)
+                } else {
+                    return menuBarBadgeText(hours: hours, minutes: rem)
+                }
+            }
+            return presetMinutes(mins)
+        }
+    }
+
     // MARK: - Режимы бодрствования
     public var sectionMode: String {
         switch code {
@@ -733,17 +771,6 @@ public struct L10n: Sendable {
         }
     }
 
-    public var menuPresetsHeader: String {
-        switch code {
-        case "uk": return "Тривалість"
-        case "ru": return "Длительность"
-        case "de": return "Dauer"
-        case "fr": return "Durée"
-        case "es": return "Duración"
-        default:   return "Duration"
-        }
-    }
-
     public var menuExtend: String {
         switch code {
         case "uk": return "Продовжити..."
@@ -757,34 +784,12 @@ public struct L10n: Sendable {
 
     public var menuMakeIndefinite: String {
         switch code {
-        case "uk": return "Сделать безстроковим"
+        case "uk": return "Зробити безстроковим"
         case "ru": return "Сделать бессрочным"
         case "de": return "Unbegrenzt fortsetzen"
         case "fr": return "Rendre indéfini"
         case "es": return "Hacer indefinido"
         default:   return "Make indefinite"
-        }
-    }
-
-    public var menuRunning: String {
-        switch code {
-        case "uk": return "працює"
-        case "ru": return "работает"
-        case "de": return "läuft"
-        case "fr": return "en cours"
-        case "es": return "ejecutándose"
-        default:   return "running"
-        }
-    }
-
-    public var menuAddRunningApp: String {
-        switch code {
-        case "uk": return "Додати запущену програму..."
-        case "ru": return "Добавить запущенную программу..."
-        case "de": return "Laufende App hinzufügen..."
-        case "fr": return "Ajouter une app active..."
-        case "es": return "Añadir app en ejecución..."
-        default:   return "Add running app..."
         }
     }
 
@@ -796,17 +801,6 @@ public struct L10n: Sendable {
         case "fr": return "Définir une durée exacte..."
         case "es": return "Definir tiempo exacto..."
         default:   return "Set exact time..."
-        }
-    }
-
-    public var customTimerPromptTitle: String {
-        switch code {
-        case "uk": return "Власний таймер"
-        case "ru": return "Свой таймер"
-        case "de": return "Eigener Timer"
-        case "fr": return "Minuterie personnalisée"
-        case "es": return "Temporizador personalizado"
-        default:   return "Custom Timer"
         }
     }
 

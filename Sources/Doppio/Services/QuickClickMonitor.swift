@@ -56,15 +56,20 @@ public final class QuickClickMonitor: QuickClickMonitoring {
             matching: [.leftMouseDown, .rightMouseDown, .rightMouseUp]
         ) { [weak self] event in
             guard let self = self else { return event }
-            return self.handleLocalMouseEvent(event)
+            return self.handleMouseEvent(event) ? nil : event
         }
 
         globalEventMonitor = NSEvent.addGlobalMonitorForEvents(
             matching: [.rightMouseDown, .leftMouseDown]
         ) { [weak self] event in
+            // Быстрая фильтрация до создания Task для соблюдения Zero-Idle CPU
+            let flags = event.modifierFlags
+            let isRightOrCtrl = event.type == .rightMouseDown || (event.type == .leftMouseDown && flags.contains(.control))
+            let isOptionLeft = event.type == .leftMouseDown && flags.contains(.option)
+            guard isRightOrCtrl || isOptionLeft else { return }
+
             Task { @MainActor [weak self] in
-                guard let self = self else { return }
-                self.handleGlobalMouseEvent(event)
+                _ = self?.handleMouseEvent(event)
             }
         }
 
@@ -85,61 +90,49 @@ public final class QuickClickMonitor: QuickClickMonitoring {
 
     // MARK: - Обработка событий мыши
 
-    private func handleLocalMouseEvent(_ event: NSEvent) -> NSEvent? {
+    private func handleMouseEvent(_ event: NSEvent) -> Bool {
         guard isEventInsideStatusItem(event) else {
-            return event
+            return false
         }
 
         // Игнорируем отпускание правой кнопки мыши над иконкой
         if event.type == .rightMouseUp {
-            return nil
+            return true
         }
 
-        let isRightClick = event.type == .rightMouseDown
-        let isControlClick = event.type == .leftMouseDown && event.modifierFlags.contains(.control)
+        let flags = event.modifierFlags
+        let isRightOrCtrl = event.type == .rightMouseDown || (event.type == .leftMouseDown && flags.contains(.control))
 
         // 1. Правый клик (или Control + клик) -> открываем/закрываем меню как по левой кнопке
-        if isRightClick || isControlClick {
+        if isRightOrCtrl {
             toggleMenuBarWindowIfNeeded()
-            return nil
+            return true
         }
 
         // 2. Option + левый клик (⌥-клик) -> быстрое переключение бодрствования без открытия меню
-        if isEnabled, event.type == .leftMouseDown, event.modifierFlags.contains(.option) {
+        if isEnabled, event.type == .leftMouseDown, flags.contains(.option) {
             triggerQuickToggleIfNeeded()
-            return nil
+            return true
         }
 
-        return event
+        return false
     }
 
-    private func handleGlobalMouseEvent(_ event: NSEvent) {
-        guard isEventInsideStatusItem(event) else { return }
-
-        let isRightClick = event.type == .rightMouseDown
-        let isControlClick = event.type == .leftMouseDown && event.modifierFlags.contains(.control)
-
-        if isRightClick || isControlClick {
-            toggleMenuBarWindowIfNeeded()
-            return
-        }
-
-        if isEnabled, event.type == .leftMouseDown, event.modifierFlags.contains(.option) {
-            triggerQuickToggleIfNeeded()
-        }
+    private func canPerformDebouncedAction() -> Bool {
+        let now = ProcessInfo.processInfo.systemUptime
+        guard now - lastActionTime > 0.15 else { return false }
+        lastActionTime = now
+        return true
     }
 
     private func toggleMenuBarWindowIfNeeded() {
-        let now = ProcessInfo.processInfo.systemUptime
-        guard now - lastActionTime > 0.15 else { return }
-        lastActionTime = now
+        guard canPerformDebouncedAction(),
+              let statusItem = findMenuBarExtraStatusItem() else { return }
 
-        guard let statusItem = findMenuBarExtraStatusItem() else { return }
+        let endSel = NSSelectorFromString("_endExpandedInterfaceSession:animate:")
+        let reqSel = NSSelectorFromString("_requestExpandedInterfaceSession")
 
-        let endSel = Selector(("_endExpandedInterfaceSession:animate:"))
-        let reqSel = Selector(("_requestExpandedInterfaceSession"))
-
-        if let session = statusItem.value(forKey: "expandedInterfaceSession"),
+        if let session = safeObject(from: statusItem, selectorName: "expandedInterfaceSession"),
            statusItem.responds(to: endSel) {
             _ = statusItem.perform(endSel, with: session, with: nil)
             logger.info("Окно меню закрыто по правому клику")
@@ -152,34 +145,35 @@ public final class QuickClickMonitor: QuickClickMonitoring {
     }
 
     private func triggerQuickToggleIfNeeded() {
-        let now = ProcessInfo.processInfo.systemUptime
-        guard now - lastActionTime > 0.15 else { return }
-        lastActionTime = now
-
+        guard canPerformDebouncedAction() else { return }
         logger.info("Быстрое переключение по ⌥-клику")
         onQuickToggle?()
     }
 
+    /// Безопасное получение свойства ObjC-объекта без риска NSUnknownKeyException
+    private func safeObject(from target: NSObject, selectorName: String) -> AnyObject? {
+        let selector = NSSelectorFromString(selectorName)
+        guard target.responds(to: selector) else { return nil }
+        return target.perform(selector)?.takeUnretainedValue()
+    }
+
     /// Находит системный экземпляр NSStatusItem (NSSceneStatusItem), принадлежащий MenuBarExtra
     private func findMenuBarExtraStatusItem() -> NSStatusItem? {
+        var fallbackItem: NSStatusItem?
         for window in NSApplication.shared.windows where window.frame.origin.y >= 0 {
             let className = String(describing: type(of: window))
             guard className.contains("StatusBar"),
-                  let statusItem = window.value(forKey: "statusItem") as? NSStatusItem else {
+                  let statusItem = safeObject(from: window, selectorName: "statusItem") as? NSStatusItem else {
                 continue
             }
-            if statusItem.value(forKey: "expandedInterfaceDelegate") != nil {
+            if safeObject(from: statusItem, selectorName: "expandedInterfaceDelegate") != nil {
                 return statusItem
             }
-        }
-        for window in NSApplication.shared.windows where window.frame.origin.y >= 0 {
-            let className = String(describing: type(of: window))
-            if className.contains("StatusBar"),
-               let statusItem = window.value(forKey: "statusItem") as? NSStatusItem {
-                return statusItem
+            if fallbackItem == nil {
+                fallbackItem = statusItem
             }
         }
-        return nil
+        return fallbackItem
     }
 
     /// Проверяет, пришёлся ли клик именно по иконке Doppio в системной строке меню (NSStatusBarWindow)

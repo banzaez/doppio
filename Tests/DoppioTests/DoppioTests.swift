@@ -46,6 +46,7 @@ struct DoppioTests {
         #expect(l10n.closeButton == "Закрити")
         #expect(l10n.quitButton == "Закрити Doppio")
         #expect(l10n.settingsLaunchAtLogin == "Запуск під час входу в систему")
+        #expect(l10n.menuMakeIndefinite == "Зробити безстроковим")
     }
 
     @Test("Проверка локализации: Русский, Английский и Немецкий + плюрализация часов")
@@ -157,30 +158,25 @@ struct DoppioTests {
         #expect(state.formattedRemainingTime.contains(":"))
     }
 
-    @Test("Проверка размеров всплывающего окна и экрана настроек (адаптивность и отсутствие переполнения)")
+    @Test("Проверка размеров окна настроек (адаптивность и отсутствие переполнения)")
     @MainActor
-    func popoverFittingDimensions() async {
+    func settingsFittingDimensions() async {
         let state = DoppioState(defaults: makeTestDefaults())
-        let view = DoppioPopoverView(state: state)
-        let hosting = NSHostingView(rootView: view)
+        let container = SettingsWindowContainer(state: state)
+        let hosting = NSHostingView(rootView: container)
         let size = hosting.fittingSize
 
-        // Окно должно иметь ширину 320 и полноценную высоту меню (более 250pt, не 16pt!)
-        #expect(size.width >= 310 && size.width <= 330)
-        #expect(size.height >= 250 && size.height <= 380)
-
-        // При активации таймера с полосой прогресса и бейджем триггера высота карточки остаётся неизменной (не скачет!)
-        state.activate(preset: .minutes30)
-        let activeHosting = NSHostingView(rootView: DoppioPopoverView(state: state))
-        #expect(abs(activeHosting.fittingSize.height - size.height) < 1.0)
+        // Окно настроек должно иметь ширину 360 и корректную высоту (не 16pt)
+        #expect(size.width >= 350 && size.width <= 370)
+        #expect(size.height >= 250 && size.height <= 460)
 
         // Проверяем экран настроек с 6 добавленными приложениями — благодаря адаптивному ScrollView высота компактна и влезает на любой экран
         for i in 1...6 {
             state.addTargetApp(TriggerApp(bundleIdentifier: "com.test.app\(i)", displayName: "Application \(i)"))
         }
-        let settingsHosting = NSHostingView(rootView: SettingsView(state: state, onBack: {}).frame(width: 294))
+        let settingsHosting = NSHostingView(rootView: SettingsView(state: state).frame(width: 328))
         let settingsSize = settingsHosting.fittingSize
-        #expect(settingsSize.height >= 300 && settingsSize.height <= 560)
+        #expect(settingsSize.height >= 280 && settingsSize.height <= 560)
     }
 
     @Test("Проверка причин деактивации и локализации")
@@ -601,5 +597,84 @@ struct DoppioTests {
         #expect(ru.updateAvailableDesc("1.5.0") == "Доступна новая версия Doppio: v1.5.0")
         #expect(en.updateAvailableDesc("1.5.0") == "A new version of Doppio is available: v1.5.0")
         #expect(ru.updateUpToDateMessage("1.5.0") == "Установлена актуальная версия Doppio v1.5.0.")
+    }
+
+    @Test("Проверка локализованного форматирования кастомных минут")
+    func formattedCustomMinutesLocalization() {
+        let ru = L10n(language: .russian)
+        let en = L10n(language: .english)
+        let uk = L10n(language: .ukrainian)
+
+        #expect(ru.formattedCustomMinutes(15) == "15 мин")
+        #expect(en.formattedCustomMinutes(15) == "15 min")
+        #expect(ru.formattedCustomMinutes(90) == "1.5 часа (90 мин)")
+        #expect(en.formattedCustomMinutes(90) == "1.5 hours (90 min)")
+        #expect(ru.formattedCustomMinutes(135) == "2ч 15м")
+        #expect(en.formattedCustomMinutes(135) == "2h 15m")
+        #expect(uk.formattedCustomMinutes(135) == "2г 15хв")
+        #expect(ru.formattedCustomMinutes(180) == "3 часа")
+        #expect(en.formattedCustomMinutes(480) == "8 hours (workday)")
+        #expect(en.formattedCustomMinutes(720) == "12 hours")
+    }
+
+    @Test("Проверка деактивации при отключении триггеров и обновления customMinutes")
+    @MainActor
+    func triggerDisableDeactivationAndCustomMinutesLiveUpdate() {
+        let mockAssertion = MockSleepAssertion()
+        let mockBattery = MockBattery(mockInfo: nil)
+        let mockLaunch = MockLaunchAtLogin()
+        let mockTrigger = MockSmartTrigger()
+        let mockNotif = MockNotificationService()
+        let mockQuickClick = MockQuickClickMonitor()
+
+        let state = DoppioState(
+            assertionService: mockAssertion,
+            batteryMonitor: mockBattery,
+            launchAtLoginService: mockLaunch,
+            notificationService: mockNotif,
+            smartTriggerService: mockTrigger,
+            quickClickMonitor: mockQuickClick,
+            defaults: makeTestDefaults()
+        )
+
+        // 1. Отключение appTriggersEnabled завершает активную appTrigger-сессию
+        let xcode = TriggerApp(bundleIdentifier: "com.apple.dt.Xcode", displayName: "Xcode")
+        mockTrigger.runningBundles = ["com.apple.dt.Xcode"]
+        state.appTriggersEnabled = true
+        state.addTargetApp(xcode)
+        #expect(state.isActive)
+        #expect(state.activeTriggerSource == .appTrigger(bundleId: xcode.bundleIdentifier, appName: xcode.displayName))
+
+        state.appTriggersEnabled = false
+        #expect(!state.isActive)
+        #expect(state.lastDeactivationReason == .userDisabled)
+
+        // 2. Удаление последнего запущенного приложения из targetApps завершает appTrigger-сессию
+        state.appTriggersEnabled = true
+        #expect(state.isActive)
+        state.removeTargetApp(id: xcode.id)
+        #expect(!state.isActive)
+        #expect(state.lastDeactivationReason == .userDisabled)
+
+        // 3. Отключение activateOnExternalDisplay завершает externalDisplay-сессию
+        mockTrigger.externalDisplayConnected = true
+        state.activateOnExternalDisplay = true
+        #expect(state.isActive)
+        #expect(state.activeTriggerSource == .externalDisplay)
+
+        state.activateOnExternalDisplay = false
+        #expect(!state.isActive)
+        #expect(state.lastDeactivationReason == .userDisabled)
+
+        // 4. Изменение customMinutes во время активного custom-таймера обновляет длительность
+        state.customMinutes = 20
+        state.activate(preset: .custom)
+        #expect(state.isActive)
+        #expect(state.totalDurationSeconds == 20 * 60.0)
+
+        state.customMinutes = 35
+        #expect(state.isActive)
+        #expect(state.totalDurationSeconds == 35 * 60.0)
+        #expect((state.remainingSeconds ?? 0) > 30 * 60.0)
     }
 }

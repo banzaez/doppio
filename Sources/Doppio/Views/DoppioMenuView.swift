@@ -4,15 +4,6 @@ import SwiftUI
 struct DoppioMenuView: View {
     @Bindable var state: DoppioState
 
-    private let standardPresets: [KeepAwakePreset] = [
-        .indefinite,
-        .minutes15,
-        .minutes30,
-        .hour1,
-        .hours2,
-        .hours4
-    ]
-
     private let customQuickMinutes = [5, 10, 20, 45, 90, 180, 480, 720]
 
     var body: some View {
@@ -26,7 +17,12 @@ struct DoppioMenuView: View {
 
         Divider()
 
-        // 3. Системные действия: Настройки и Выход
+        // 3. Режим бодрствования (Только Mac / Экран и Mac)
+        modeSection
+
+        Divider()
+
+        // 4. Системные действия: Обновления, Настройки и Выход
         systemActionsSection
     }
 
@@ -35,14 +31,14 @@ struct DoppioMenuView: View {
     @ViewBuilder
     private var statusSection: some View {
         if state.isActive {
-            let subtitle = state.remainingSeconds != nil
-                ? state.l10n.statusRemaining(state.formattedRemainingTime)
-                : state.l10n.statusAwakeIndefinitely
-
-            Label("Doppio: \(subtitle)", systemImage: "cup.and.saucer.fill")
+            Label("Doppio: \(state.statusSubtitle)", systemImage: "cup.and.saucer.fill")
 
             if let triggerName = state.activeTriggerSource.badgeTitle(using: state.l10n) {
                 Label(triggerName, systemImage: "bolt.fill")
+            }
+
+            if let info = state.batteryInfo {
+                Label(info.description(using: state.l10n), systemImage: info.iconName)
             }
 
             Button {
@@ -60,7 +56,7 @@ struct DoppioMenuView: View {
                     Button("+30 \(state.l10n.minuteSuffix)") {
                         state.extendSession(by: 30 * 60)
                     }
-                    Button("+1 \(state.l10n.presetHours(1))") {
+                    Button("+\(state.l10n.presetHours(1))") {
                         state.extendSession(by: 60 * 60)
                     }
                     Divider()
@@ -72,14 +68,17 @@ struct DoppioMenuView: View {
                 }
             } else {
                 Button {
-                    state.customMinutes = 15
-                    state.activate(preset: .custom)
+                    state.activate(preset: .minutes15)
                 } label: {
                     Label(state.l10n.presetMinutes(15), systemImage: "timer")
                 }
             }
         } else {
-            Label(state.l10n.statusSleepAllowed, systemImage: "moon.zzz")
+            Label(state.statusSubtitle, systemImage: "moon.zzz")
+
+            if let info = state.batteryInfo {
+                Label(info.description(using: state.l10n), systemImage: info.iconName)
+            }
 
             if let reason = state.localizedDeactivationReason {
                 Label(reason, systemImage: "info.circle")
@@ -95,12 +94,11 @@ struct DoppioMenuView: View {
 
     @ViewBuilder
     private var presetsSection: some View {
-        ForEach(standardPresets) { preset in
+        ForEach(KeepAwakePreset.standardPresets) { preset in
             Toggle(preset.title(using: state.l10n), isOn: Binding(
                 get: { state.isActive && state.selectedPreset == preset },
                 set: { shouldBeActive in
                     if shouldBeActive {
-                        state.selectedPreset = preset
                         state.activate(preset: preset)
                     } else {
                         state.deactivate(reason: .userDisabled)
@@ -111,11 +109,15 @@ struct DoppioMenuView: View {
 
         Menu {
             ForEach(customQuickMinutes, id: \.self) { mins in
-                Toggle(formattedMinutesTitle(mins), isOn: Binding(
+                Toggle(state.l10n.formattedCustomMinutes(mins), isOn: Binding(
                     get: { state.isActive && state.selectedPreset == .custom && state.customMinutes == mins },
-                    set: { _ in
-                        state.customMinutes = mins
-                        state.activate(preset: .custom)
+                    set: { shouldBeActive in
+                        if shouldBeActive {
+                            state.customMinutes = mins
+                            state.activate(preset: .custom)
+                        } else {
+                            state.deactivate(reason: .userDisabled)
+                        }
                     }
                 ))
             }
@@ -129,9 +131,27 @@ struct DoppioMenuView: View {
             }
         } label: {
             let title = state.selectedPreset == .custom
-                ? "\(state.l10n.presetCustom) (\(formattedMinutesTitle(state.customMinutes)))..."
+                ? "\(state.l10n.presetCustom) (\(state.l10n.formattedCustomMinutes(state.customMinutes)))..."
                 : "\(state.l10n.presetCustom)..."
             Label(title, systemImage: "slider.horizontal.3")
+        }
+    }
+
+    @ViewBuilder
+    private var modeSection: some View {
+        Section(state.l10n.sectionMode) {
+            ForEach(SleepAssertionType.allCases, id: \.self) { type in
+                Toggle(isOn: Binding(
+                    get: { state.assertionType == type },
+                    set: { isSelected in
+                        if isSelected {
+                            state.assertionType = type
+                        }
+                    }
+                )) {
+                    Label(type.title(using: state.l10n), systemImage: type.iconName)
+                }
+            }
         }
     }
 
@@ -139,7 +159,7 @@ struct DoppioMenuView: View {
     private var systemActionsSection: some View {
         Button {
             Task { @MainActor in
-                await AppUpdateService.shared.checkForUpdates(isUserInitiated: true, l10n: state.l10n)
+                await state.updateService.checkForUpdates(isUserInitiated: true, l10n: state.l10n)
             }
         } label: {
             Label(state.l10n.menuCheckUpdates, systemImage: "arrow.triangle.2.circlepath")
@@ -165,7 +185,7 @@ struct DoppioMenuView: View {
     @MainActor
     private func promptForCustomMinutes() {
         let alert = NSAlert()
-        alert.messageText = state.l10n.customTimerPromptTitle
+        alert.messageText = state.l10n.presetCustom
         alert.informativeText = state.l10n.customTimerPromptMessage
         alert.alertStyle = .informational
         alert.addButton(withTitle: state.l10n.menuActivate)
@@ -183,44 +203,6 @@ struct DoppioMenuView: View {
                 state.customMinutes = min(720, mins)
                 state.activate(preset: .custom)
             }
-        }
-    }
-
-    private func formattedMinutesTitle(_ mins: Int) -> String {
-        switch mins {
-        case 90:
-            switch state.l10n.code {
-            case "uk": return "1.5 години (90 хв)"
-            case "ru": return "1.5 часа (90 мин)"
-            case "de": return "1,5 Stunden (90 Min)"
-            case "fr": return "1,5 heure (90 min)"
-            case "es": return "1,5 horas (90 min)"
-            default:   return "1.5 hours (90 min)"
-            }
-        case 180:
-            return state.l10n.presetHours(3)
-        case 480:
-            switch state.l10n.code {
-            case "uk": return "8 годин (робочий день)"
-            case "ru": return "8 часов (рабочий день)"
-            case "de": return "8 Stunden (Arbeitstag)"
-            case "fr": return "8 heures (journée)"
-            case "es": return "8 horas (jornada)"
-            default:   return "8 hours (workday)"
-            }
-        case 720:
-            return state.l10n.presetHours(12)
-        default:
-            if mins >= 60 {
-                let hours = mins / 60
-                let rem = mins % 60
-                if rem == 0 {
-                    return state.l10n.presetHours(hours)
-                } else {
-                    return "\(hours) ч \(rem) мин"
-                }
-            }
-            return "\(mins) \(state.l10n.minuteSuffix)"
         }
     }
 }

@@ -14,7 +14,7 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/banzaez/doppio/releases/latest"><img src="https://img.shields.io/badge/Релиз-v1.5.0-7952b3?style=flat-square&logo=apple" alt="Релиз v1.5.0" /></a>
+  <a href="https://github.com/banzaez/doppio/releases/latest"><img src="https://img.shields.io/badge/Релиз-v1.5.1-7952b3?style=flat-square&logo=apple" alt="Релиз v1.5.1" /></a>
   <img src="https://img.shields.io/badge/macOS-14.0%2B%20(Sonoma%20%7C%20Sequoia)-0078D7?style=flat-square&logo=apple&logoColor=white" alt="macOS 14.0+" />
   <img src="https://img.shields.io/badge/Swift-6.4-F05138?style=flat-square&logo=swift&logoColor=white" alt="Swift 6.4" />
   <img src="https://img.shields.io/badge/Архитектура-Universal%20(Apple%20Silicon%20%26%20Intel)-success?style=flat-square" alt="Universal Architecture" />
@@ -252,21 +252,15 @@ doppio/
 │       │   └── SessionTimerController.swift # Монотонный таймер на ContinuousClock
 │       └── Views/
 │           ├── Components/
-│           │   ├── ControlCenterHeroCard.swift  # Карточка статуса с кольцом прогресса
-│           │   ├── FooterActionsView.swift      # Нижняя панель и индикатор батареи
 │           │   ├── GlassStyles.swift            # Модификаторы стиля Liquid Glass
 │           │   ├── ModelPresentation.swift      # Презентационные расширения моделей
-│           │   ├── PresetSelectionView.swift    # Сетка пресетов и степпер времени
-│           │   ├── SettingsWindowManager.swift  # Управление окном настроек и делегат
-│           │   ├── SleepModeSelectorView.swift  # Анимированный селектор режима сна
-│           │   └── WindowAutoResizer.swift      # Помощник адаптивной высоты окна
+│           │   └── SettingsWindowManager.swift  # Управление окном настроек и его геометрией
 │           ├── DoppioMenuView.swift         # Разметка системного меню NSMenu
-│           ├── DoppioPopoverView.swift      # Всплывающий поповер
 │           ├── MenuBarLabelView.swift       # Иконка и бейдж в строке меню
 │           └── SettingsView.swift           # Окно настроек из 3 вкладок
 └── Tests/
     └── DoppioTests/
-        └── DoppioTests.swift       # Набор из 21 юнит- и интеграционного теста
+        └── DoppioTests.swift       # Набор из 23 юнит- и интеграционных тестов
 ```
 
 ---

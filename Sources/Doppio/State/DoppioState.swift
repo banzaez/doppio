@@ -14,12 +14,17 @@ public final class DoppioState {
 
     public var customMinutes: Int {
         didSet {
+            guard customMinutes != oldValue else { return }
             settingsStore.customMinutes = customMinutes
+            if isActive && selectedPreset == .custom {
+                activate(preset: .custom)
+            }
         }
     }
 
     public var assertionType: SleepAssertionType {
         didSet {
+            guard assertionType != oldValue else { return }
             settingsStore.assertionType = assertionType
             if isActive {
                 updateAssertion(activate: true, type: assertionType)
@@ -35,7 +40,7 @@ public final class DoppioState {
     public private(set) var totalDurationSeconds: TimeInterval? = nil
     public private(set) var menuBarBadgeText: String? = nil
 
-    /// Открыто ли сейчас окно поповера (управляет адаптивной частотой тиков таймера для Zero Idle CPU)
+    /// Открыто ли сейчас окно UI (управляет адаптивной частотой тиков таймера для Zero Idle CPU)
     public var isPopoverVisible: Bool = false {
         didSet {
             guard isPopoverVisible != oldValue else { return }
@@ -46,21 +51,10 @@ public final class DoppioState {
         }
     }
 
-    // MARK: - Навигация поповера
-    public enum PopoverScreen: Equatable {
-        case main
-        case settings
-    }
-
-    public var currentScreen: PopoverScreen = .main
-
-    public func resetToMainScreen() {
-        self.currentScreen = .main
-    }
-
     // MARK: - Настройки строки меню и быстрых действий
     public var menuBarDisplayStyle: MenuBarDisplayStyle {
         didSet {
+            guard menuBarDisplayStyle != oldValue else { return }
             settingsStore.menuBarDisplayStyle = menuBarDisplayStyle
             syncTimerControllerBadgeConfig()
             updateMenuBarBadge()
@@ -69,6 +63,7 @@ public final class DoppioState {
 
     public var showTimerInMenuBar: Bool {
         didSet {
+            guard showTimerInMenuBar != oldValue else { return }
             settingsStore.showTimerInMenuBar = showTimerInMenuBar
             syncTimerControllerBadgeConfig()
             updateMenuBarBadge()
@@ -77,6 +72,7 @@ public final class DoppioState {
 
     public var quickToggleEnabled: Bool {
         didSet {
+            guard quickToggleEnabled != oldValue else { return }
             settingsStore.quickToggleEnabled = quickToggleEnabled
             quickClickMonitor.isEnabled = quickToggleEnabled
         }
@@ -84,6 +80,7 @@ public final class DoppioState {
 
     public var notifyBeforeExpiry: Bool {
         didSet {
+            guard notifyBeforeExpiry != oldValue else { return }
             settingsStore.notifyBeforeExpiry = notifyBeforeExpiry
             timerController.notifyBeforeExpiry = notifyBeforeExpiry
             if notifyBeforeExpiry {
@@ -100,20 +97,35 @@ public final class DoppioState {
     // MARK: - Умные триггеры
     public var appTriggersEnabled: Bool {
         didSet {
+            guard appTriggersEnabled != oldValue else { return }
             settingsStore.appTriggersEnabled = appTriggersEnabled
-            checkAppTriggersOnDemand()
+            if appTriggersEnabled {
+                checkAppTriggersOnDemand()
+            } else if isActive, case .appTrigger = activeTriggerSource {
+                deactivate(reason: .userDisabled)
+            }
         }
     }
 
     public var targetApps: [TriggerApp] {
         didSet {
+            guard targetApps != oldValue else { return }
             settingsStore.targetApps = targetApps
+            if isActive, case .appTrigger = activeTriggerSource {
+                let runningBundles = smartTriggerService.runningBundleIdentifiers()
+                let anyStillRunning = targetApps.contains { runningBundles.contains($0.bundleIdentifier) }
+                if !anyStillRunning {
+                    deactivate(reason: .userDisabled)
+                    return
+                }
+            }
             checkAppTriggersOnDemand()
         }
     }
 
     public var activateOnACPower: Bool {
         didSet {
+            guard activateOnACPower != oldValue else { return }
             settingsStore.activateOnACPower = activateOnACPower
             if activateOnACPower, let info = batteryInfo, info.isPluggedIn, !isActive {
                 activateWithTrigger(.acPower)
@@ -123,15 +135,21 @@ public final class DoppioState {
 
     public var deactivateOnBattery: Bool {
         didSet {
+            guard deactivateOnBattery != oldValue else { return }
             settingsStore.deactivateOnBattery = deactivateOnBattery
         }
     }
 
     public var activateOnExternalDisplay: Bool {
         didSet {
+            guard activateOnExternalDisplay != oldValue else { return }
             settingsStore.activateOnExternalDisplay = activateOnExternalDisplay
-            if activateOnExternalDisplay, smartTriggerService.hasExternalDisplayConnected(), !isActive {
-                activateWithTrigger(.externalDisplay)
+            if activateOnExternalDisplay {
+                if smartTriggerService.hasExternalDisplayConnected(), !isActive {
+                    activateWithTrigger(.externalDisplay)
+                }
+            } else if isActive && activeTriggerSource == .externalDisplay {
+                deactivate(reason: .userDisabled)
             }
         }
     }
@@ -139,6 +157,7 @@ public final class DoppioState {
     // MARK: - Защита аккумулятора
     public var batteryProtectionEnabled: Bool {
         didSet {
+            guard batteryProtectionEnabled != oldValue else { return }
             settingsStore.batteryProtectionEnabled = batteryProtectionEnabled
             if isActive && batteryProtectionEnabled {
                 checkBatteryThreshold()
@@ -148,6 +167,7 @@ public final class DoppioState {
 
     public var batteryThreshold: Int {
         didSet {
+            guard batteryThreshold != oldValue else { return }
             settingsStore.batteryThreshold = batteryThreshold
             if isActive {
                 checkBatteryThreshold()
@@ -160,6 +180,7 @@ public final class DoppioState {
     // MARK: - Автообновления
     public var autoCheckUpdatesEnabled: Bool {
         didSet {
+            guard autoCheckUpdatesEnabled != oldValue else { return }
             settingsStore.autoCheckUpdatesEnabled = autoCheckUpdatesEnabled
         }
     }
@@ -167,6 +188,7 @@ public final class DoppioState {
     // MARK: - Язык и локализация
     public var language: AppLanguage {
         didSet {
+            guard language != oldValue else { return }
             settingsStore.language = language
             self.l10n = L10n(language: language)
             updateMenuBarBadge()
@@ -193,6 +215,7 @@ public final class DoppioState {
     private let notificationService: any AppNotificationManaging
     private let smartTriggerService: any SmartTriggerManaging
     private let quickClickMonitor: any QuickClickMonitoring
+    public let updateService: any AppUpdateManaging
     private let settingsStore: DoppioSettingsStore
     private let timerController = SessionTimerController()
     private let logger = Logger(subsystem: "com.doppio.app", category: "DoppioState")
@@ -207,6 +230,7 @@ public final class DoppioState {
         notificationService: any AppNotificationManaging = AppNotificationService.shared,
         smartTriggerService: (any SmartTriggerManaging)? = nil,
         quickClickMonitor: (any QuickClickMonitoring)? = nil,
+        updateService: (any AppUpdateManaging)? = nil,
         defaults: UserDefaults = .standard
     ) {
         let store = DoppioSettingsStore(defaults: defaults)
@@ -217,6 +241,8 @@ public final class DoppioState {
         self.notificationService = notificationService
         self.smartTriggerService = smartTriggerService ?? SmartTriggerService()
         self.quickClickMonitor = quickClickMonitor ?? QuickClickMonitor.shared
+        let resolvedUpdateService = updateService ?? AppUpdateService.shared
+        self.updateService = resolvedUpdateService
 
         // Прямая инициализация сохранённых настроек без вызова didSet и лишних записей на диск
         let savedLang = store.language
@@ -247,13 +273,13 @@ public final class DoppioState {
         setupSmartTriggers()
         checkInitialTriggers()
 
-        if store.autoCheckUpdatesEnabled {
+        if Bundle.main.bundleIdentifier != nil, store.autoCheckUpdatesEnabled {
             let lastCheck = store.lastUpdateCheckTime ?? .distantPast
             if Date().timeIntervalSince(lastCheck) > 24 * 3600 {
                 store.lastUpdateCheckTime = Date()
-                Task { @MainActor in
+                Task { @MainActor [resolvedUpdateService] in
                     try? await Task.sleep(for: .seconds(3))
-                    await AppUpdateService.shared.checkForUpdates(isUserInitiated: false)
+                    await resolvedUpdateService.checkForUpdates(isUserInitiated: false, l10n: nil)
                 }
             }
         }
@@ -306,7 +332,6 @@ public final class DoppioState {
         quickClickMonitor.isEnabled = quickToggleEnabled
         quickClickMonitor.onQuickToggle = { [weak self] in
             self?.toggle()
-            WindowAutoResizerBridge.shared.closeWindow()
         }
         quickClickMonitor.startMonitoring()
     }
@@ -419,31 +444,37 @@ public final class DoppioState {
 
     /// Выключить бодрствование
     public func deactivate(reason: DeactivationReason = .sessionCompleted) {
-        timerController.stop()
+        resetSessionState(reason: reason)
 
         Task {
             await notificationService.cancelPendingNotifications()
         }
 
+        updateAssertion(activate: false, type: assertionType)
+    }
+
+    /// Корректное завершение работы приложения с синхронным освобождением ресурсов
+    public func quitApplication() {
+        assertionTask?.cancel()
+        assertionTask = nil
+        resetSessionState(reason: .quitApp)
+
+        Task {
+            await notificationService.cancelPendingNotifications()
+            await assertionService.release()
+            NSApplication.shared.terminate(nil)
+        }
+    }
+
+    private func resetSessionState(reason: DeactivationReason) {
+        timerController.stop()
         remainingSeconds = nil
         totalDurationSeconds = nil
         isActive = false
         activeTriggerSource = .manual
         lastDeactivationReason = reason
         updateMenuBarBadge()
-
-        updateAssertion(activate: false, type: assertionType)
-
         logger.info("Doppio деактивирован: \(reason.localized(using: self.l10n))")
-    }
-
-    /// Корректное завершение работы приложения с синхронным освобождением ресурсов
-    public func quitApplication() {
-        deactivate(reason: .quitApp)
-        Task {
-            await assertionService.release()
-            NSApplication.shared.terminate(nil)
-        }
     }
 
     /// Переключение автозапуска
@@ -494,6 +525,10 @@ public final class DoppioState {
         targetApps.removeAll { $0.id == id }
     }
 
+    public func runningBundleIdentifiers() -> Set<String> {
+        smartTriggerService.runningBundleIdentifiers()
+    }
+
     public func isTargetAppRunning(_ app: TriggerApp) -> Bool {
         smartTriggerService.runningBundleIdentifiers().contains(app.bundleIdentifier)
     }
@@ -524,19 +559,13 @@ public final class DoppioState {
                 activateWithTrigger(.appTrigger(bundleId: bundleId, appName: appName))
             }
 
-        case .acPower:
-            guard activateOnACPower else { return }
-            if !isActive {
-                activateWithTrigger(.acPower)
-            }
-
         case .externalDisplay:
             guard activateOnExternalDisplay else { return }
             if !isActive {
                 activateWithTrigger(.externalDisplay)
             }
 
-        case .manual:
+        case .manual, .acPower:
             break
         }
     }
@@ -552,12 +581,6 @@ public final class DoppioState {
                 deactivate(reason: reason)
             }
 
-        case .powerDisconnected:
-            guard deactivateOnBattery else { return }
-            if isActive {
-                deactivate(reason: reason)
-            }
-
         case .externalDisplayDisconnected:
             if isActive && activeTriggerSource == .externalDisplay {
                 deactivate(reason: reason)
@@ -570,7 +593,20 @@ public final class DoppioState {
 
     // MARK: - Вспомогательные вычисляемые свойства
 
-    /// Форматированная строка оставшегося времени для отображения в UI поповера
+    /// Локализованная строка текущего статуса сессии для меню и UI
+    public var statusSubtitle: String {
+        if isActive {
+            if remainingSeconds != nil {
+                return l10n.statusRemaining(formattedRemainingTime)
+            } else {
+                return l10n.statusAwakeIndefinitely
+            }
+        } else {
+            return l10n.statusSleepAllowed
+        }
+    }
+
+    /// Форматированная строка оставшегося времени для отображения в UI
     public var formattedRemainingTime: String {
         guard let remaining = remainingSeconds, remaining > 0 else {
             return "∞"
@@ -585,17 +621,6 @@ public final class DoppioState {
         } else {
             return String(format: "%02d:%02d", minutes, seconds)
         }
-    }
-
-    /// Прогресс оставшегося времени (0.0...1.0) для полосы прогресса в карточке Control Center
-    public var timerProgress: Double? {
-        guard isActive,
-              let remaining = remainingSeconds,
-              let total = totalDurationSeconds,
-              total > 0 else {
-            return nil
-        }
-        return min(max(remaining / total, 0.0), 1.0)
     }
 
     private func updateMenuBarBadge() {

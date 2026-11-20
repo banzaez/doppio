@@ -75,14 +75,6 @@ extension SleepAssertionType {
         }
     }
 
-    public var title: String {
-        title(using: L10n(language: .defaultLanguage))
-    }
-
-    public var description: String {
-        description(using: L10n(language: .defaultLanguage))
-    }
-
     public var iconName: String {
         switch self {
         case .systemOnly: return "cpu"
@@ -115,10 +107,6 @@ extension BatteryInfo {
         } else {
             return "\(percentage)% • \(l10n.batteryOnBattery)"
         }
-    }
-
-    public var description: String {
-        description(using: L10n(language: .defaultLanguage))
     }
 
     public func statusColor(threshold: Int) -> Color {
@@ -188,22 +176,6 @@ extension KeepAwakePreset {
         case .hours2: return l10n.presetHours(2)
         case .hours4: return l10n.presetHours(4)
         case .custom: return l10n.presetCustom
-        }
-    }
-
-    public var title: String {
-        title(using: L10n(language: .defaultLanguage))
-    }
-
-    public var shortTitle: String {
-        switch self {
-        case .indefinite: return "∞"
-        case .minutes15: return "15m"
-        case .minutes30: return "30m"
-        case .hour1: return "1h"
-        case .hours2: return "2h"
-        case .hours4: return "4h"
-        case .custom: return "⏱"
         }
     }
 }

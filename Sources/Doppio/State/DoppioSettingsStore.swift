@@ -28,6 +28,12 @@ public struct DoppioSettingsStore {
         self.defaults = defaults
     }
 
+    private func bool(for key: StorageKey, default defaultValue: Bool) -> Bool {
+        defaults.object(forKey: key.rawValue) != nil
+            ? defaults.bool(forKey: key.rawValue)
+            : defaultValue
+    }
+
     public var assertionType: SleepAssertionType {
         get {
             guard let raw = defaults.string(forKey: StorageKey.assertionType.rawValue),
@@ -55,77 +61,49 @@ public struct DoppioSettingsStore {
     }
 
     public var showTimerInMenuBar: Bool {
-        get {
-            defaults.object(forKey: StorageKey.showTimerInMenuBar.rawValue) != nil
-                ? defaults.bool(forKey: StorageKey.showTimerInMenuBar.rawValue)
-                : true
-        }
+        get { bool(for: .showTimerInMenuBar, default: true) }
         nonmutating set {
             defaults.set(newValue, forKey: StorageKey.showTimerInMenuBar.rawValue)
         }
     }
 
     public var quickToggleEnabled: Bool {
-        get {
-            defaults.object(forKey: StorageKey.quickToggleEnabled.rawValue) != nil
-                ? defaults.bool(forKey: StorageKey.quickToggleEnabled.rawValue)
-                : true
-        }
+        get { bool(for: .quickToggleEnabled, default: true) }
         nonmutating set {
             defaults.set(newValue, forKey: StorageKey.quickToggleEnabled.rawValue)
         }
     }
 
     public var notifyBeforeExpiry: Bool {
-        get {
-            defaults.object(forKey: StorageKey.notifyBeforeExpiry.rawValue) != nil
-                ? defaults.bool(forKey: StorageKey.notifyBeforeExpiry.rawValue)
-                : true
-        }
+        get { bool(for: .notifyBeforeExpiry, default: true) }
         nonmutating set {
             defaults.set(newValue, forKey: StorageKey.notifyBeforeExpiry.rawValue)
         }
     }
 
     public var appTriggersEnabled: Bool {
-        get {
-            defaults.object(forKey: StorageKey.appTriggersEnabled.rawValue) != nil
-                ? defaults.bool(forKey: StorageKey.appTriggersEnabled.rawValue)
-                : true
-        }
+        get { bool(for: .appTriggersEnabled, default: true) }
         nonmutating set {
             defaults.set(newValue, forKey: StorageKey.appTriggersEnabled.rawValue)
         }
     }
 
     public var activateOnACPower: Bool {
-        get {
-            defaults.object(forKey: StorageKey.activateOnACPower.rawValue) != nil
-                ? defaults.bool(forKey: StorageKey.activateOnACPower.rawValue)
-                : false
-        }
+        get { bool(for: .activateOnACPower, default: false) }
         nonmutating set {
             defaults.set(newValue, forKey: StorageKey.activateOnACPower.rawValue)
         }
     }
 
     public var deactivateOnBattery: Bool {
-        get {
-            defaults.object(forKey: StorageKey.deactivateOnBattery.rawValue) != nil
-                ? defaults.bool(forKey: StorageKey.deactivateOnBattery.rawValue)
-                : false
-        }
+        get { bool(for: .deactivateOnBattery, default: false) }
         nonmutating set {
             defaults.set(newValue, forKey: StorageKey.deactivateOnBattery.rawValue)
         }
     }
 
     public var activateOnExternalDisplay: Bool {
-        get {
-            defaults.object(forKey: StorageKey.activateOnExternalDisplay.rawValue) != nil
-                ? defaults.bool(forKey: StorageKey.activateOnExternalDisplay.rawValue)
-                : false
-        }
+        get { bool(for: .activateOnExternalDisplay, default: false) }
         nonmutating set {
             defaults.set(newValue, forKey: StorageKey.activateOnExternalDisplay.rawValue)
         }
@@ -147,11 +125,7 @@ public struct DoppioSettingsStore {
     }
 
     public var batteryProtectionEnabled: Bool {
-        get {
-            defaults.object(forKey: StorageKey.batteryProtectionEnabled.rawValue) != nil
-                ? defaults.bool(forKey: StorageKey.batteryProtectionEnabled.rawValue)
-                : true
-        }
+        get { bool(for: .batteryProtectionEnabled, default: true) }
         nonmutating set {
             defaults.set(newValue, forKey: StorageKey.batteryProtectionEnabled.rawValue)
         }
@@ -197,11 +171,7 @@ public struct DoppioSettingsStore {
     }
 
     public var autoCheckUpdatesEnabled: Bool {
-        get {
-            defaults.object(forKey: StorageKey.autoCheckUpdatesEnabled.rawValue) != nil
-                ? defaults.bool(forKey: StorageKey.autoCheckUpdatesEnabled.rawValue)
-                : true
-        }
+        get { bool(for: .autoCheckUpdatesEnabled, default: true) }
         nonmutating set {
             defaults.set(newValue, forKey: StorageKey.autoCheckUpdatesEnabled.rawValue)
         }
