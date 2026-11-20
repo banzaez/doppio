@@ -22,6 +22,10 @@
   <img src="https://img.shields.io/badge/Tests-100%25%20Passing-brightgreen?style=flat-square" alt="Tests 100% Passing" />
 </p>
 
+<p align="center">
+  <img src="Assets/teaser.png" alt="Doppio — Keep-Awake Utility for macOS" width="800" />
+</p>
+
 ---
 
 ## 📖 Overview
