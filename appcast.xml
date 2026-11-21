@@ -1,0 +1,15 @@
+<?xml version="1.0" standalone="yes"?>
+<rss xmlns:sparkle="http://www.andymatuschak.org/xml-namespaces/sparkle" version="2.0">
+    <channel>
+        <title>Doppio</title>
+        <item>
+            <title>1.5.3</title>
+            <pubDate>Sat, 21 Nov 2026 09:51:23 +0200</pubDate>
+            <sparkle:version>9</sparkle:version>
+            <sparkle:shortVersionString>1.5.3</sparkle:shortVersionString>
+            <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+            <sparkle:hardwareRequirements>arm64</sparkle:hardwareRequirements>
+            <enclosure url="https://github.com/banzaez/doppio/releases/download/v1.5.3/Doppio-v1.5.3-macOS.zip" length="2339491" type="application/octet-stream" sparkle:edSignature="UywfkTA1sqnO6HdCZr7o9FcirFb8UH9eaPpb0oMscyLSMrF2D/hkHzFB5wTlUnpLu3c4bLCuCBXjp/sVag56DA=="/>
+        </item>
+    </channel>
+</rss>
