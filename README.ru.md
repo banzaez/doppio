@@ -23,7 +23,7 @@
 </p>
 
 <p align="center">
-  <img src="Assets/teaser.png" alt="Doppio — Keep-Awake Utility for macOS" width="800" />
+  <img src="Assets/teaser.png?v=2" alt="Doppio — Keep-Awake Utility for macOS" width="100%" />
 </p>
 
 ---
