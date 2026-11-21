@@ -39,7 +39,7 @@ public final class AppUpdateService: AppUpdateManaging {
 
     /// Текущая версия приложения
     public var currentVersion: String {
-        Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.5.1"
+        Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.5.2"
     }
 
     /// Проверка обновлений на GitHub

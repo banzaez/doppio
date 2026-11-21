@@ -166,17 +166,17 @@ struct DoppioTests {
         let hosting = NSHostingView(rootView: container)
         let size = hosting.fittingSize
 
-        // Окно настроек должно иметь ширину 360 и корректную высоту (не 16pt)
-        #expect(size.width >= 350 && size.width <= 370)
-        #expect(size.height >= 250 && size.height <= 460)
+        // Окно настроек должно иметь ширину 440 и корректную высоту (не 16pt)
+        #expect(size.width >= 430 && size.width <= 450)
+        #expect(size.height >= 280 && size.height <= 580)
 
         // Проверяем экран настроек с 6 добавленными приложениями — благодаря адаптивному ScrollView высота компактна и влезает на любой экран
         for i in 1...6 {
             state.addTargetApp(TriggerApp(bundleIdentifier: "com.test.app\(i)", displayName: "Application \(i)"))
         }
-        let settingsHosting = NSHostingView(rootView: SettingsView(state: state).frame(width: 328))
+        let settingsHosting = NSHostingView(rootView: SettingsView(state: state).frame(width: 400))
         let settingsSize = settingsHosting.fittingSize
-        #expect(settingsSize.height >= 280 && settingsSize.height <= 560)
+        #expect(settingsSize.height >= 320 && settingsSize.height <= 640)
     }
 
     @Test("Проверка причин деактивации и локализации")

@@ -28,8 +28,8 @@ public final class SettingsWindowManager {
         window.titlebarAppearsTransparent = true
         window.isMovableByWindowBackground = true
         window.isReleasedWhenClosed = false
-        let initialSize = hostingController.sizeThatFits(in: CGSize(width: 360, height: CGFloat.greatestFiniteMagnitude))
-        window.setContentSize(NSSize(width: 360, height: max(220, initialSize.height)))
+        let initialSize = hostingController.sizeThatFits(in: CGSize(width: 440, height: CGFloat.greatestFiniteMagnitude))
+        window.setContentSize(NSSize(width: 440, height: max(260, initialSize.height)))
         window.center()
 
         let controller = NSWindowController(window: window)
@@ -59,11 +59,11 @@ public struct SettingsWindowContainer: View {
                 .ignoresSafeArea()
 
             SettingsView(state: state)
-                .padding(.horizontal, 16)
-                .padding(.top, 8)
-                .padding(.bottom, 14)
+                .padding(.horizontal, 20)
+                .padding(.top, 12)
+                .padding(.bottom, 18)
         }
-        .frame(width: 360)
+        .frame(width: 440)
         .fixedSize(horizontal: false, vertical: true)
         .onChange(of: state.language) { _, _ in
             SettingsWindowManager.shared.updateTitle(state.l10n.settingsTitle)

@@ -35,12 +35,12 @@ struct SettingsView: View {
     @Namespace private var tabNamespace
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 10) {
+        VStack(alignment: .leading, spacing: 14) {
             // Стеклянная панель переключения вкладок macOS 27 Liquid Glass
             glassTabBar
 
             // Содержимое выбранной вкладки
-            VStack(alignment: .leading, spacing: 8) {
+            VStack(alignment: .leading, spacing: 12) {
                 switch selectedTab {
                 case .general:
                     generalSection
@@ -56,7 +56,7 @@ struct SettingsView: View {
     }
 
     private var glassTabBar: some View {
-        HStack(spacing: 4) {
+        HStack(spacing: 5) {
             ForEach(SettingsTab.allCases) { tab in
                 let isSelected = selectedTab == tab
 
@@ -65,23 +65,23 @@ struct SettingsView: View {
                         selectedTab = tab
                     }
                 } label: {
-                    HStack(spacing: 5) {
+                    HStack(spacing: 6) {
                         Image(systemName: tab.icon)
-                            .font(.system(size: 10.5))
+                            .font(.system(size: 12.5))
                         Text(tab.title(using: state.l10n))
-                            .font(.system(size: 11, weight: isSelected ? .semibold : .medium))
+                            .font(.system(size: 13, weight: isSelected ? .semibold : .medium))
                             .lineLimit(1)
                     }
                     .foregroundStyle(isSelected ? Color.primary : Color.secondary)
                     .frame(maxWidth: .infinity)
-                    .frame(height: 26)
+                    .frame(height: 32)
                     .contentShape(Rectangle())
                     .background {
                         if isSelected {
-                            RoundedRectangle(cornerRadius: 7, style: .continuous)
+                            RoundedRectangle(cornerRadius: 8, style: .continuous)
                                 .fill(Color.primary.opacity(0.10))
                                 .overlay(
-                                    RoundedRectangle(cornerRadius: 7, style: .continuous)
+                                    RoundedRectangle(cornerRadius: 8, style: .continuous)
                                         .stroke(
                                             LinearGradient(
                                                 colors: [
@@ -102,13 +102,13 @@ struct SettingsView: View {
                 .buttonStyle(.plain)
             }
         }
-        .padding(3)
+        .padding(4)
         .background(
-            RoundedRectangle(cornerRadius: 9, style: .continuous)
+            RoundedRectangle(cornerRadius: 11, style: .continuous)
                 .fill(Color.primary.opacity(0.04))
         )
         .overlay(
-            RoundedRectangle(cornerRadius: 9, style: .continuous)
+            RoundedRectangle(cornerRadius: 11, style: .continuous)
                 .stroke(Color.primary.opacity(0.06), lineWidth: 0.5)
         )
     }
@@ -116,16 +116,16 @@ struct SettingsView: View {
     // MARK: - Секции интерфейса
 
     private var generalSection: some View {
-        VStack(spacing: 7) {
+        VStack(spacing: 10) {
             // Язык интерфейса
             HStack(spacing: 8) {
                 Image(systemName: "globe")
-                    .font(.system(size: 11))
+                    .font(.system(size: 13))
                     .foregroundStyle(Color.secondary)
-                    .frame(width: 16, alignment: .center)
+                    .frame(width: 20, alignment: .center)
 
                 Text(state.l10n.settingsLanguage)
-                    .font(.system(size: 11))
+                    .font(.system(size: 13))
                     .foregroundStyle(Color.primary)
                     .lineLimit(1)
                     .minimumScaleFactor(0.85)
@@ -147,14 +147,14 @@ struct SettingsView: View {
                     }
                 } label: {
                     Text(state.language.displayName)
-                        .font(.system(size: 10.5, weight: .medium))
-                        .padding(.horizontal, 8)
-                        .frame(height: 20)
+                        .font(.system(size: 12.5, weight: .medium))
+                        .padding(.horizontal, 10)
+                        .frame(height: 26)
                 }
                 .menuStyle(.borderlessButton)
-                .buttonStyle(GlassButtonStyle(cornerRadius: 6))
+                .buttonStyle(GlassButtonStyle(cornerRadius: 7))
             }
-            .frame(height: 22)
+            .frame(height: 28)
 
             Divider()
                 .padding(.vertical, 1)
@@ -175,63 +175,63 @@ struct SettingsView: View {
             // Длительность своего таймера
             HStack(spacing: 8) {
                 Image(systemName: "timer")
-                    .font(.system(size: 11))
+                    .font(.system(size: 13))
                     .foregroundStyle(Color.secondary)
-                    .frame(width: 16, alignment: .center)
+                    .frame(width: 20, alignment: .center)
 
                 Text(state.l10n.presetCustom)
-                    .font(.system(size: 11))
+                    .font(.system(size: 13))
                     .foregroundStyle(Color.primary)
                     .lineLimit(1)
 
                 Spacer(minLength: 4)
 
-                HStack(spacing: 5) {
+                HStack(spacing: 6) {
                     Button {
                         state.customMinutes = max(1, state.customMinutes - 5)
                     } label: {
                         Image(systemName: "minus")
-                            .font(.system(size: 9, weight: .bold))
-                            .frame(width: 18, height: 18)
+                            .font(.system(size: 11, weight: .bold))
+                            .frame(width: 24, height: 24)
                     }
-                    .buttonStyle(GlassButtonStyle(cornerRadius: 5))
+                    .buttonStyle(GlassButtonStyle(cornerRadius: 6))
 
                     Text("\(state.customMinutes) \(state.l10n.minuteSuffix)")
-                        .font(.system(size: 10.5, weight: .medium, design: .rounded))
+                        .font(.system(size: 12.5, weight: .medium, design: .rounded))
                         .monospacedDigit()
-                        .frame(minWidth: 46, alignment: .center)
+                        .frame(minWidth: 56, alignment: .center)
 
                     Button {
                         state.customMinutes = min(720, state.customMinutes + 5)
                     } label: {
                         Image(systemName: "plus")
-                            .font(.system(size: 9, weight: .bold))
-                            .frame(width: 18, height: 18)
+                            .font(.system(size: 11, weight: .bold))
+                            .frame(width: 24, height: 24)
                     }
-                    .buttonStyle(GlassButtonStyle(cornerRadius: 5))
+                    .buttonStyle(GlassButtonStyle(cornerRadius: 6))
                 }
             }
-            .frame(height: 22)
+            .frame(height: 28)
 
             Divider()
                 .padding(.vertical, 1)
 
             // Режим бодрствования (Только Mac | Экран и Mac)
-            VStack(alignment: .leading, spacing: 6) {
+            VStack(alignment: .leading, spacing: 8) {
                 HStack(spacing: 8) {
                     Image(systemName: "cup.and.saucer")
-                        .font(.system(size: 11))
+                        .font(.system(size: 13))
                         .foregroundStyle(Color.secondary)
-                        .frame(width: 16, alignment: .center)
+                        .frame(width: 20, alignment: .center)
 
                     Text(state.l10n.sectionMode)
-                        .font(.system(size: 11))
+                        .font(.system(size: 13))
                         .foregroundStyle(Color.primary)
                         .lineLimit(1)
                 }
                 .help(state.assertionType.description(using: state.l10n))
 
-                HStack(spacing: 5) {
+                HStack(spacing: 6) {
                     ForEach(SleepAssertionType.allCases, id: \.self) { type in
                         let isSelected = state.assertionType == type
                         Button {
@@ -239,45 +239,45 @@ struct SettingsView: View {
                                 state.assertionType = type
                             }
                         } label: {
-                            HStack(spacing: 5) {
+                            HStack(spacing: 6) {
                                 Image(systemName: type.iconName)
-                                    .font(.system(size: 10))
+                                    .font(.system(size: 12))
                                 Text(type.title(using: state.l10n))
-                                    .font(.system(size: 10.5, weight: isSelected ? .bold : .medium))
+                                    .font(.system(size: 12.5, weight: isSelected ? .bold : .medium))
                                     .lineLimit(1)
                                     .minimumScaleFactor(0.85)
                             }
                             .frame(maxWidth: .infinity)
-                            .frame(height: 22)
+                            .frame(height: 28)
                         }
-                        .buttonStyle(GlassButtonStyle(isSelected: isSelected, isAccent: true, cornerRadius: 6))
+                        .buttonStyle(GlassButtonStyle(isSelected: isSelected, isAccent: true, cornerRadius: 7))
                     }
                 }
                 .help(state.assertionType.description(using: state.l10n))
             }
         }
-        .padding(.horizontal, 11)
-        .padding(.vertical, 9)
-        .glassCard(cornerRadius: 8)
+        .padding(.horizontal, 14)
+        .padding(.vertical, 12)
+        .glassCard(cornerRadius: 10)
     }
 
     private var menuBarSection: some View {
-        VStack(alignment: .leading, spacing: 7) {
+        VStack(alignment: .leading, spacing: 10) {
             // Заголовок и переключатель стилей в компактном блоке
             HStack(spacing: 8) {
                 Image(systemName: "menubar.rectangle")
-                    .font(.system(size: 11, weight: .semibold))
+                    .font(.system(size: 13, weight: .semibold))
                     .foregroundStyle(Color.orange)
-                    .frame(width: 16, alignment: .center)
+                    .frame(width: 20, alignment: .center)
                 Text(state.l10n.menuBarStyleTitle)
-                    .font(.system(size: 11, weight: .semibold))
+                    .font(.system(size: 13, weight: .semibold))
                     .foregroundStyle(Color.primary)
                     .lineLimit(1)
             }
             .help(state.l10n.menuBarStyleDesc)
 
             // Переключатель стилей (Стандартный | Только иконка)
-            HStack(spacing: 5) {
+            HStack(spacing: 6) {
                 ForEach(MenuBarDisplayStyle.allCases) { style in
                     let isSelected = state.menuBarDisplayStyle == style
                     Button {
@@ -285,18 +285,18 @@ struct SettingsView: View {
                             state.menuBarDisplayStyle = style
                         }
                     } label: {
-                        HStack(spacing: 5) {
+                        HStack(spacing: 6) {
                             Image(systemName: style.iconName)
-                                .font(.system(size: 10))
+                                .font(.system(size: 12))
                             Text(style.title(using: state.l10n))
-                                .font(.system(size: 10.5, weight: isSelected ? .bold : .medium))
+                                .font(.system(size: 12.5, weight: isSelected ? .bold : .medium))
                                 .lineLimit(1)
                                 .minimumScaleFactor(0.85)
                         }
                         .frame(maxWidth: .infinity)
-                        .frame(height: 22)
+                        .frame(height: 28)
                     }
-                    .buttonStyle(GlassButtonStyle(isSelected: isSelected, isAccent: true, cornerRadius: 6))
+                    .buttonStyle(GlassButtonStyle(isSelected: isSelected, isAccent: true, cornerRadius: 7))
                 }
             }
             .help(state.l10n.menuBarStyleDesc)
@@ -323,20 +323,20 @@ struct SettingsView: View {
                 isOn: $state.notifyBeforeExpiry
             )
         }
-        .padding(.horizontal, 11)
-        .padding(.vertical, 9)
-        .glassCard(cornerRadius: 8)
+        .padding(.horizontal, 14)
+        .padding(.vertical, 12)
+        .glassCard(cornerRadius: 10)
     }
 
     private var smartTriggersSection: some View {
-        VStack(alignment: .leading, spacing: 7) {
+        VStack(alignment: .leading, spacing: 10) {
             HStack(spacing: 8) {
                 Image(systemName: "bolt.badge.automatic")
-                    .font(.system(size: 11, weight: .semibold))
+                    .font(.system(size: 13, weight: .semibold))
                     .foregroundStyle(Color.orange)
-                    .frame(width: 16, alignment: .center)
+                    .frame(width: 20, alignment: .center)
                 Text(state.l10n.settingsSmartTriggersSection)
-                    .font(.system(size: 11, weight: .semibold))
+                    .font(.system(size: 13, weight: .semibold))
                     .foregroundStyle(Color.primary)
                     .lineLimit(1)
 
@@ -357,26 +357,26 @@ struct SettingsView: View {
             )
 
             if state.appTriggersEnabled {
-                VStack(alignment: .leading, spacing: 4) {
+                VStack(alignment: .leading, spacing: 6) {
                     if state.targetApps.isEmpty {
                         Text(state.l10n.settingsNoTargetApps)
-                            .font(.system(size: 9.5, weight: .regular))
+                            .font(.system(size: 11.5, weight: .regular))
                             .foregroundStyle(Color.secondary.opacity(0.75))
-                            .padding(.leading, 23)
-                            .frame(height: 18)
+                            .padding(.leading, 28)
+                            .frame(height: 22)
                     } else if state.targetApps.count <= 3 {
                         targetAppsRows
-                            .padding(.leading, 23)
+                            .padding(.leading, 28)
                     } else {
-                        // Явная высота (height: 74) гарантирует, что ScrollView не растянется внутри .fixedSize(vertical: true)
+                        // Явная высота (height: 96) гарантирует, что ScrollView не растянется внутри .fixedSize(vertical: true)
                         ScrollView(.vertical, showsIndicators: true) {
                             targetAppsRows
                         }
-                        .frame(height: 74)
-                        .padding(.leading, 23)
+                        .frame(height: 96)
+                        .padding(.leading, 28)
                     }
                 }
-                .padding(.vertical, 1)
+                .padding(.vertical, 2)
             }
 
             Divider()
@@ -407,9 +407,9 @@ struct SettingsView: View {
                 isOn: $state.activateOnExternalDisplay
             )
         }
-        .padding(.horizontal, 11)
-        .padding(.vertical, 9)
-        .glassCard(cornerRadius: 8)
+        .padding(.horizontal, 14)
+        .padding(.vertical, 12)
+        .glassCard(cornerRadius: 10)
     }
 
     private var addAppMenuButton: some View {
@@ -435,37 +435,37 @@ struct SettingsView: View {
                 Label(state.l10n.settingsChooseFromDisk, systemImage: "folder")
             }
         } label: {
-            HStack(spacing: 4) {
+            HStack(spacing: 5) {
                 Image(systemName: "plus.circle.fill")
-                    .font(.system(size: 10))
+                    .font(.system(size: 12))
                 Text(state.l10n.settingsAddAppButton)
-                    .font(.system(size: 10.5, weight: .medium))
+                    .font(.system(size: 12.5, weight: .medium))
                     .lineLimit(1)
             }
             .foregroundStyle(Color.orange)
-            .padding(.horizontal, 8)
-            .frame(height: 20)
+            .padding(.horizontal, 10)
+            .frame(height: 26)
         }
         .menuStyle(.borderlessButton)
-        .buttonStyle(GlassButtonStyle(cornerRadius: 6))
+        .buttonStyle(GlassButtonStyle(cornerRadius: 7))
     }
 
     private var targetAppsRows: some View {
         let runningBundles = state.runningBundleIdentifiers()
-        return VStack(spacing: 3) {
+        return VStack(spacing: 4) {
             ForEach(state.targetApps) { app in
-                HStack(spacing: 8) {
+                HStack(spacing: 10) {
                     Image(nsImage: app.appIcon)
                         .resizable()
                         .interpolation(.high)
-                        .frame(width: 14, height: 14)
+                        .frame(width: 18, height: 18)
 
                     Circle()
                         .fill(runningBundles.contains(app.bundleIdentifier) ? Color.green : Color.secondary.opacity(0.35))
-                        .frame(width: 5, height: 5)
+                        .frame(width: 6, height: 6)
 
                     Text(app.displayName)
-                        .font(.system(size: 11, weight: .medium))
+                        .font(.system(size: 12.5, weight: .medium))
                         .foregroundStyle(Color.primary)
                         .lineLimit(1)
 
@@ -477,17 +477,17 @@ struct SettingsView: View {
                         }
                     } label: {
                         Image(systemName: "xmark")
-                            .font(.system(size: 8, weight: .bold))
+                            .font(.system(size: 10, weight: .bold))
                             .foregroundStyle(Color.secondary)
-                            .frame(width: 16, height: 16)
+                            .frame(width: 20, height: 20)
                             .contentShape(Rectangle())
                     }
                     .buttonStyle(.plain)
                 }
-                .padding(.horizontal, 8)
-                .frame(height: 22)
+                .padding(.horizontal, 10)
+                .frame(height: 28)
                 .background(
-                    RoundedRectangle(cornerRadius: 5, style: .continuous)
+                    RoundedRectangle(cornerRadius: 6, style: .continuous)
                         .fill(Color.primary.opacity(0.045))
                 )
             }
@@ -497,7 +497,7 @@ struct SettingsView: View {
     private var batterySection: some View {
         Group {
             if state.batteryInfo != nil {
-                VStack(alignment: .leading, spacing: 7) {
+                VStack(alignment: .leading, spacing: 10) {
                     settingToggleRow(
                         title: state.l10n.settingsBatteryProtection,
                         icon: "bolt.shield",
@@ -506,7 +506,7 @@ struct SettingsView: View {
                     )
 
                     if state.batteryProtectionEnabled {
-                        HStack(spacing: 5) {
+                        HStack(spacing: 6) {
                             ForEach([10, 15, 20, 25, 30], id: \.self) { pct in
                                 let isSelected = state.batteryThreshold == pct
 
@@ -516,116 +516,116 @@ struct SettingsView: View {
                                     }
                                 } label: {
                                     Text("\(pct)%")
-                                        .font(.system(size: 10.5, weight: isSelected ? .bold : .medium, design: .rounded))
+                                        .font(.system(size: 12.5, weight: isSelected ? .bold : .medium, design: .rounded))
                                         .foregroundStyle(isSelected ? Color.orange : Color.secondary)
                                         .frame(maxWidth: .infinity)
-                                        .frame(height: 22)
+                                        .frame(height: 28)
                                 }
                                 .buttonStyle(GlassButtonStyle(
                                     isSelected: isSelected,
                                     isAccent: true,
-                                    cornerRadius: 6
+                                    cornerRadius: 7
                                 ))
                             }
                         }
                         .padding(.top, 2)
                     }
                 }
-                .padding(.horizontal, 11)
-                .padding(.vertical, 9)
-                .glassCard(cornerRadius: 8)
+                .padding(.horizontal, 14)
+                .padding(.vertical, 12)
+                .glassCard(cornerRadius: 10)
             } else {
                 HStack(spacing: 8) {
                     Image(systemName: "desktopcomputer")
-                        .font(.system(size: 11))
+                        .font(.system(size: 13))
                         .foregroundStyle(Color.secondary)
-                        .frame(width: 16, alignment: .center)
+                        .frame(width: 20, alignment: .center)
 
                     Text(state.l10n.desktopMacNoBattery)
-                        .font(.system(size: 11))
+                        .font(.system(size: 13))
                         .foregroundStyle(Color.secondary)
                         .lineLimit(1)
                         .minimumScaleFactor(0.85)
 
                     Spacer()
                 }
-                .frame(height: 22)
-                .padding(.horizontal, 11)
-                .padding(.vertical, 9)
-                .glassCard(cornerRadius: 8)
+                .frame(height: 28)
+                .padding(.horizontal, 14)
+                .padding(.vertical, 12)
+                .glassCard(cornerRadius: 10)
             }
         }
     }
 
     private var aboutSection: some View {
-        VStack(spacing: 8) {
+        VStack(spacing: 12) {
             // Карточка приложения
-            VStack(spacing: 4) {
+            VStack(spacing: 6) {
                 Image(systemName: "cup.and.saucer.fill")
-                    .font(.system(size: 32))
+                    .font(.system(size: 38))
                     .foregroundStyle(Color.orange)
                     .symbolEffect(.bounce, value: state.isActive)
 
                 Text("Doppio")
-                    .font(.system(size: 15, weight: .bold, design: .rounded))
+                    .font(.system(size: 18, weight: .bold, design: .rounded))
                     .foregroundStyle(Color.primary)
 
                 Text("v\(state.updateService.currentVersion) • macOS 2026")
-                    .font(.system(size: 10.5, weight: .regular))
+                    .font(.system(size: 12, weight: .regular))
                     .foregroundStyle(Color.secondary)
             }
             .frame(maxWidth: .infinity)
-            .padding(.vertical, 10)
+            .padding(.vertical, 14)
             .glassCard(cornerRadius: 10)
 
             // Блок обновлений
             updateCardView
 
             // Ссылка на GitHub и выход
-            HStack(spacing: 8) {
+            HStack(spacing: 10) {
                 if let url = URL(string: "https://github.com/banzaez/doppio") {
                     Link(destination: url) {
-                        HStack(spacing: 5) {
+                        HStack(spacing: 6) {
                             Image(systemName: "link")
-                                .font(.system(size: 10))
+                                .font(.system(size: 12))
                             Text("GitHub")
-                                .font(.system(size: 10.5, weight: .medium))
+                                .font(.system(size: 12.5, weight: .medium))
                         }
                         .foregroundStyle(Color.primary.opacity(0.85))
                         .frame(maxWidth: .infinity)
-                        .frame(height: 26)
+                        .frame(height: 32)
                     }
-                    .buttonStyle(GlassButtonStyle(cornerRadius: 7))
+                    .buttonStyle(GlassButtonStyle(cornerRadius: 8))
                 }
 
                 Button {
                     state.quitApplication()
                 } label: {
-                    HStack(spacing: 5) {
+                    HStack(spacing: 6) {
                         Image(systemName: "power")
-                            .font(.system(size: 10, weight: .semibold))
+                            .font(.system(size: 12, weight: .semibold))
                         Text(state.l10n.quitButton)
-                            .font(.system(size: 10.5, weight: .medium))
+                            .font(.system(size: 12.5, weight: .medium))
                     }
                     .foregroundStyle(Color.red.opacity(0.9))
                     .frame(maxWidth: .infinity)
-                    .frame(height: 26)
+                    .frame(height: 32)
                 }
-                .buttonStyle(GlassButtonStyle(cornerRadius: 7))
+                .buttonStyle(GlassButtonStyle(cornerRadius: 8))
             }
         }
     }
 
     private var updateCardView: some View {
-        VStack(spacing: 7) {
+        VStack(spacing: 10) {
             HStack(spacing: 8) {
                 Image(systemName: "arrow.triangle.2.circlepath")
-                    .font(.system(size: 11))
+                    .font(.system(size: 13))
                     .foregroundStyle(Color.secondary)
-                    .frame(width: 16, alignment: .center)
+                    .frame(width: 20, alignment: .center)
 
                 Text(state.l10n.updateSectionTitle)
-                    .font(.system(size: 11, weight: .semibold))
+                    .font(.system(size: 13, weight: .semibold))
                     .foregroundStyle(Color.primary)
 
                 Spacer()
@@ -635,17 +635,17 @@ struct SettingsView: View {
                         await state.updateService.checkForUpdates(isUserInitiated: true, l10n: state.l10n)
                     }
                 } label: {
-                    HStack(spacing: 4) {
+                    HStack(spacing: 5) {
                         Image(systemName: "arrow.clockwise")
-                            .font(.system(size: 9.5))
+                            .font(.system(size: 11.5))
                         Text(state.updateService.isChecking ? state.l10n.updateChecking : state.l10n.updateCheckButton)
-                            .font(.system(size: 10, weight: .medium))
+                            .font(.system(size: 12, weight: .medium))
                     }
                     .foregroundStyle(Color.orange)
-                    .padding(.horizontal, 8)
-                    .frame(height: 20)
+                    .padding(.horizontal, 10)
+                    .frame(height: 26)
                 }
-                .buttonStyle(GlassButtonStyle(cornerRadius: 6))
+                .buttonStyle(GlassButtonStyle(cornerRadius: 7))
                 .disabled(state.updateService.isChecking)
             }
 
@@ -658,8 +658,8 @@ struct SettingsView: View {
                 isOn: $state.autoCheckUpdatesEnabled
             )
         }
-        .padding(.horizontal, 11)
-        .padding(.vertical, 8)
+        .padding(.horizontal, 14)
+        .padding(.vertical, 11)
         .glassCard(cornerRadius: 10)
     }
 
@@ -671,12 +671,12 @@ struct SettingsView: View {
     ) -> some View {
         HStack(spacing: 8) {
             Image(systemName: icon)
-                .font(.system(size: 11))
+                .font(.system(size: 13))
                 .foregroundStyle(Color.secondary)
-                .frame(width: 16, alignment: .center)
+                .frame(width: 20, alignment: .center)
 
             Text(title)
-                .font(.system(size: 11))
+                .font(.system(size: 13))
                 .foregroundStyle(Color.primary)
                 .lineLimit(1)
                 .minimumScaleFactor(0.85)
@@ -685,10 +685,10 @@ struct SettingsView: View {
 
             Toggle("", isOn: isOn)
                 .toggleStyle(.switch)
-                .controlSize(.mini)
+                .controlSize(.small)
                 .labelsHidden()
         }
-        .frame(height: 22)
+        .frame(height: 28)
         .help(helpText ?? "")
     }
 

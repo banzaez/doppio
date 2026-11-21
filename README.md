@@ -14,7 +14,7 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/banzaez/doppio/releases/latest"><img src="https://img.shields.io/badge/Release-v1.5.1-7952b3?style=flat-square&logo=apple" alt="Release v1.5.1" /></a>
+  <a href="https://github.com/banzaez/doppio/releases/latest"><img src="https://img.shields.io/badge/Release-v1.5.2-7952b3?style=flat-square&logo=apple" alt="Release v1.5.2" /></a>
   <img src="https://img.shields.io/badge/macOS-14.0%2B%20(Sonoma%20%7C%20Sequoia)-0078D7?style=flat-square&logo=apple&logoColor=white" alt="macOS 14.0+" />
   <img src="https://img.shields.io/badge/Swift-6.4-F05138?style=flat-square&logo=swift&logoColor=white" alt="Swift 6.4" />
   <img src="https://img.shields.io/badge/Architecture-Universal%20(Apple%20Silicon%20%26%20Intel)-success?style=flat-square" alt="Universal Architecture" />
