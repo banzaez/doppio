@@ -10,3 +10,10 @@ Doppio.app/
 .vscode/
 AppIcon.iconset/
 *.zip
+*.delta
+*.p12
+*.key
+*.crt
+*.pem
+*.cer
+certificates/

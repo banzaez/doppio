@@ -182,6 +182,7 @@ public final class DoppioState {
         didSet {
             guard autoCheckUpdatesEnabled != oldValue else { return }
             settingsStore.autoCheckUpdatesEnabled = autoCheckUpdatesEnabled
+            updateService.setAutoCheckEnabled(autoCheckUpdatesEnabled)
         }
     }
 
@@ -262,6 +263,7 @@ public final class DoppioState {
         self.batteryThreshold = store.batteryThreshold
         self.customMinutes = store.customMinutes
         self.autoCheckUpdatesEnabled = store.autoCheckUpdatesEnabled
+        resolvedUpdateService.setAutoCheckEnabled(store.autoCheckUpdatesEnabled)
 
         self.isLaunchAtLogin = launchAtLoginService.isEnabled
         self.batteryInfo = batteryMonitor.fetchBatteryInfo()
